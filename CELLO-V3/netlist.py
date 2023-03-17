@@ -1,8 +1,7 @@
 '''
 NETLIST class
-input netlist JSON from YOSYS output
-under development,
-saving work from jupyter
+input: netlist JSON from YOSYS output
+(under development)
 '''
 
 class Netlist:
