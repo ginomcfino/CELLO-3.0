@@ -26,7 +26,7 @@ app.layout = html.Div(
                 'height': 'max-height',
             }
         ),
-        html.H5(
+        html.H3(
             '''UCFormatter Tool''',
             style={'flex': 1, 'textAlign': 'center', },
         ),
@@ -39,24 +39,11 @@ app.layout = html.Div(
                     '''
                     The Cello software designs the DNA sequences for programmable circuits 
                     based on a high-level software description and a library of characterized 
-                    DNA parts representing Boolean logic gates.''',
-                    style={'flex': 0.6, 'textAlign': 'center'},
-                ),
-                html.Div(style={'flex': 0.2, 'textAlign': 'center'}),
-            ],
-            style={
-                'display': 'flex',
-                'flex-direction': 'row',
-            }
-        ),
-        html.Div(
-            children=[
-                html.Div(style={'flex': 0.2, 'textAlign': 'center'}),
-                html.Div(
-                    '''
+                    DNA parts representing Boolean logic gates.
                     The user constraints file (UCF) is
                     a JavaScript Object Notation (JSON) file that describes 
-                    a part and gate library for a particular organism.''',
+                    a part and gate library for a particular organism.
+                    ''',
                     style={'flex': 0.6, 'textAlign': 'center'},
                 ),
                 html.Div(style={'flex': 0.2, 'textAlign': 'center'}),
@@ -66,7 +53,6 @@ app.layout = html.Div(
                 'flex-direction': 'row',
             }
         ),
-
         html.Br(),
 
         html.Div(
@@ -115,6 +101,12 @@ app.layout = html.Div(
         ),
 
         html.Div([
+            html.H5('UCF preview: '),
+            html.Div(id='ucf_name', style={
+                'padding-left': '100px',
+                'padding-right': '100px'
+            }),
+            html.Br(),
             html.Div([
                 "Please select a collection to modify: ",
                 dcc.Input(id='ucf_choice', value='-----', type='text'),
@@ -122,19 +114,25 @@ app.layout = html.Div(
                             n_clicks=0, children='Submit')
             ],
             ),
-            html.Br(),
-            html.P(
-                id='ucf_name',
-                style={
-                    'tex-align': 'center',
-                    'flex': 0.8
-                }
-            ),
         ],
             style={
                 'text-align': 'center',
         }
-        )
+        ),
+
+        # html.Div(
+        #     children=[
+        #         html.Div(style={'flex': 0.2, 'textAlign': 'center'}),
+        #         html.Div(id='ucf_name', style={'flex': 0.6, 'textAlign': 'center'}),
+        #         html.Div(style={'flex': 0.2, 'textAlign': 'center'}),
+        #     ],
+        #     style={
+        #         'display': 'flex',
+        #         'flex-direction': 'row',
+        #     }
+        # ),
+
+
 
     ],
     style={
@@ -155,7 +153,15 @@ def this_function_name_does_not_even_matter(ucf_name):
         print(json.dumps(ucf_json[0], indent=4))
         print()
         print()
-    return ucf_name
+    return html.Div(
+        html.Pre(json.dumps(ucf_json[:10], indent=2)),
+        style={
+            'height': '500px',
+            'overflow': 'auto',
+            'white-space': 'pre-wrap',
+            'background-color': 'rgba(128, 128, 128, 0.1)'
+        }
+    )
 
 
 if __name__ == '__main__':

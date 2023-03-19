@@ -45,7 +45,7 @@ We welcome contributions from the community! If you'd like to contribute to CELL
 
 ## Credits
 
-CELLO-3.0 was developed by [your name] and [other contributors]. It was inspired by the original CELLO software package developed by [original author's name] and [other contributors].
+CELLO-3.0 was developed by [your name] and [other contributors](). It was inspired by the original CELLO software package developed by [original author's name] and [other contributors].
 
 ## License
 
