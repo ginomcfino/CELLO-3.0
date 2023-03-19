@@ -3,6 +3,21 @@ from dash.exceptions import PreventUpdate
 import json
 import os
 import glob
+import requests
+
+# TODO: Correctly link all of the ucf files and their names
+# TODO: Also be able to link schemas the schemas folder
+# TODO: Make this save_path route to AWS storage
+retrieval_url = 'https://github.com/CIDARLAB/Cello-UCF/develop/files/v2/<input/output/ucf>/<filename>'
+
+# save_path = '/path/to/save/file/<filename>'
+# response = requests.get(retrieval_url)
+# if response.status_code == 200:
+#     with open(save_path, 'wb') as f:
+#         f.write(response.content)
+#     print('File downloaded successfully.')
+# else:
+#     print('Failed to download file.')
 
 
 # TODO: Implement AWS S3 to host UCF Files
@@ -70,8 +85,12 @@ app.layout = html.Div(
                     dcc.Dropdown(ucf_files, ucf_files[0], id='ucf_select'),
 
                     html.Br(),
-                ], style={'padding': 10, 'flex': 1}),
-
+                ], style={'padding': 10,
+                          'flex': 1,
+                          'padding-left': '100px',
+                          'padding-right': '100px'
+                          }
+                ),
             ],
             style={
                 'textAlign': 'center',
@@ -96,7 +115,7 @@ app.layout = html.Div(
             ),
             html.Br(),
             # html.P(id='ucf_collection_names')
-        ], 
+        ],
             style={
                 'text-align': 'center',
         }
@@ -122,6 +141,7 @@ app.layout = html.Div(
 #         print()
 #         print()
 #     return ucf_data
+
 
 @app.callback(
     Output('ucf_preview', 'children'),
@@ -163,7 +183,7 @@ def select_ucf(ucf_name):
 #             'text-align': 'left'
 #         }
 #     )
-    
+
 # @app.callback(
 #     Output('ucf_collection_names', 'children'),
 #     Input('ucf_preview', 'children')
@@ -176,7 +196,7 @@ def select_ucf(ucf_name):
 #     for i in ucf:
 #         collections.append(i['collection'])
 #     return collections + ' what is this? '
-    
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
