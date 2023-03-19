@@ -3,12 +3,13 @@ from dash.exceptions import PreventUpdate
 import json
 import os
 import glob
-import requests
+# import requests
 
 # TODO: Correctly link all of the ucf files and their names
 # TODO: Also be able to link schemas the schemas folder
 # TODO: Make this save_path route to AWS storage
-retrieval_url = 'https://github.com/CIDARLAB/Cello-UCF/develop/files/v2/<input/output/ucf>/<filename>'
+retrieval_url = 'https://github.com/ginomcfino/CELLO-3.0/dev/UCFormatter/UCFs'
+# retrieval_url = 'https://github.com/CIDARLAB/Cello-UCF/develop/files/v2/<input/output/ucf>/<filename>'
 
 # save_path = '/path/to/save/file/<filename>'
 # response = requests.get(retrieval_url)
