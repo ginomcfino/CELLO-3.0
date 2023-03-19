@@ -19,7 +19,6 @@ retrieval_url = 'https://github.com/CIDARLAB/Cello-UCF/develop/files/v2/<input/o
 # else:
 #     print('Failed to download file.')
 
-
 # TODO: Implement AWS S3 to host UCF Files
 # TODO: Retrieve UCF files with REST API
 # TODO: Implement AWS ElastiCache for in-memory storage
@@ -37,7 +36,7 @@ app.layout = html.Div(
     children=[
         # Data Storage in Local Meomory
         # dcc.Store(id='ucf-data', storage_type='local'),
-
+    
         # html components
         html.H1(
             children='CELLO-V3',
@@ -114,7 +113,7 @@ app.layout = html.Div(
             ],
             ),
             html.Br(),
-            # html.P(id='ucf_collection_names')
+            html.P(id='ucf_collection_names')
         ],
             style={
                 'text-align': 'center',
@@ -128,19 +127,6 @@ app.layout = html.Div(
         'flex-direction': 'column',
     }
 )
-
-# @app.callback(
-#     Output('ucf-data', 'data'),
-#     Input('ucf_select', 'value')
-# )
-# def select_ucf(ucf_name):
-#     with open(os.path.join(ucf_path, ucf_name), 'r') as f:
-#         ucf_data = json.load(f)
-#         print('\'Click\'')
-#         print(json.dumps(ucf_data[0], indent=4))
-#         print()
-#         print()
-#     return ucf_data
 
 
 @app.callback(
@@ -166,36 +152,6 @@ def select_ucf(ucf_name):
     )
 
 
-# @app.callback(
-#     Output('ucf_preview', 'children'),
-#     Input('ucf-data', 'data')
-# )
-# def this_function_name_does_not_even_matter(ucf):
-#     if ucf is None:
-#         raise PreventUpdate
-#     return html.Div(
-#         html.Pre(json.dumps(ucf[:10], indent=4)),
-#         style={
-#             'height': '500px',
-#             'overflow': 'auto',
-#             'white-space': 'nowrap',
-#             'background-color': 'rgba(128, 128, 128, 0.1)',
-#             'text-align': 'left'
-#         }
-#     )
-
-# @app.callback(
-#     Output('ucf_collection_names', 'children'),
-#     Input('ucf_preview', 'children')
-# )
-# def get_ucf_collection_names(ucf):
-#     if ucf is None:
-#         print("ERROR")
-#         raise PreventUpdate
-#     collections = []
-#     for i in ucf:
-#         collections.append(i['collection'])
-#     return collections + ' what is this? '
 
 
 if __name__ == '__main__':
