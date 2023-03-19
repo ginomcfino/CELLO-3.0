@@ -8,27 +8,29 @@ import requests
 # TODO: Correctly link all of the ucf files and their names
 # TODO: Also be able to link schemas the schemas folder
 # TODO: Make this save_path route to AWS storage
-retrieval_url = 'https://github.com/CIDARLAB/Cello-UCF/develop/files/v2/<input/output/ucf>/<filename>'
 
-# save_path = '/path/to/save/file/<filename>'
-# response = requests.get(retrieval_url)
-# if response.status_code == 200:
-#     with open(save_path, 'wb') as f:
-#         f.write(response.content)
-#     print('File downloaded successfully.')
-# else:
-#     print('Failed to download file.')
+# This is OK because this is a public repo
+UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/dev-merge/UCFormatter/UCFs'
+# schema_link = 'https://github.com/CIDARLAB/Cello-UCF/develop/schemas/v2/<xxx.schema.json>'
+
+# Retrieves ucf-list
+ucf_list = None
+ucf_txt_url = UCFs_folder + '/ucf-list.txt'
+ucf_resp = requests.get(ucf_txt_url)
+if ucf_resp.ok:
+    file_contents = ucf_resp.content.decode('utf-8')
+    lines = file_contents.split('\n')
+    lines = list(filter(lambda x: x != '', lines))
+    # print(lines)
+    ucf_list = lines
+else:
+    print(f"Failed to get file contents. Status code: {ucf_resp.status_code}")
 
 
 # TODO: Implement AWS S3 to host UCF Files
 # TODO: Retrieve UCF files with REST API
 # TODO: Implement AWS ElastiCache for in-memory storage
-ucf_path = '../../IO/inputs'
-cur_dir = os.getcwd()
-os.chdir(ucf_path)
-extension = '.json'
-ucf_files = sorted(list(glob.glob('*' + extension)))
-os.chdir(cur_dir)
+
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
@@ -37,7 +39,7 @@ app.layout = html.Div(
     children=[
         # Data Storage in Local Meomory
         # dcc.Store(id='ucf-data', storage_type='local'),
-
+    
         # html components
         html.H1(
             children='CELLO-V3',
@@ -82,7 +84,7 @@ app.layout = html.Div(
             children=[
                 html.Div(children=[
                     html.Label('Select UCF template: '),
-                    dcc.Dropdown(ucf_files, ucf_files[0], id='ucf_select'),
+                    dcc.Dropdown(ucf_list, ucf_list[0], id='ucf_select'),
 
                     html.Br(),
                 ], style={'padding': 10,
@@ -114,7 +116,7 @@ app.layout = html.Div(
             ],
             ),
             html.Br(),
-            # html.P(id='ucf_collection_names')
+            html.P(id='ucf_collection_names')
         ],
             style={
                 'text-align': 'center',
@@ -129,31 +131,19 @@ app.layout = html.Div(
     }
 )
 
-# @app.callback(
-#     Output('ucf-data', 'data'),
-#     Input('ucf_select', 'value')
-# )
-# def select_ucf(ucf_name):
-#     with open(os.path.join(ucf_path, ucf_name), 'r') as f:
-#         ucf_data = json.load(f)
-#         print('\'Click\'')
-#         print(json.dumps(ucf_data[0], indent=4))
-#         print()
-#         print()
-#     return ucf_data
-
 
 @app.callback(
     Output('ucf_preview', 'children'),
     Input('ucf_select', 'value')
 )
-def select_ucf(ucf_name):
-    with open(os.path.join(ucf_path, ucf_name), 'r') as f:
-        ucf_data = json.load(f)
-        print('\'Click\'')
-        print(json.dumps(ucf_data[0], indent=4))
-        print()
-        print()
+def select_ucf(ucf_name):    
+    with requests.get(UCFs_folder+'/'+ucf_name) as response:
+        if response.ok:
+            ucf_data = json.loads(response.content)
+            print('\'Click\'')
+            print(json.dumps(ucf_data[0], indent=4))
+        else:
+            raise PreventUpdate
     return html.Div(
         html.Pre(json.dumps(ucf_data[:10], indent=4)),
         style={
@@ -164,39 +154,7 @@ def select_ucf(ucf_name):
             'text-align': 'left'
         }
     )
-
-
-# @app.callback(
-#     Output('ucf_preview', 'children'),
-#     Input('ucf-data', 'data')
-# )
-# def this_function_name_does_not_even_matter(ucf):
-#     if ucf is None:
-#         raise PreventUpdate
-#     return html.Div(
-#         html.Pre(json.dumps(ucf[:10], indent=4)),
-#         style={
-#             'height': '500px',
-#             'overflow': 'auto',
-#             'white-space': 'nowrap',
-#             'background-color': 'rgba(128, 128, 128, 0.1)',
-#             'text-align': 'left'
-#         }
-#     )
-
-# @app.callback(
-#     Output('ucf_collection_names', 'children'),
-#     Input('ucf_preview', 'children')
-# )
-# def get_ucf_collection_names(ucf):
-#     if ucf is None:
-#         print("ERROR")
-#         raise PreventUpdate
-#     collections = []
-#     for i in ucf:
-#         collections.append(i['collection'])
-#     return collections + ' what is this? '
-
+    
 
 if __name__ == '__main__':
     app.run_server(debug=True)
