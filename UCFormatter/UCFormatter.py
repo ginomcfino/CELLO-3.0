@@ -1,15 +1,13 @@
 from dash import Dash, dcc, html, Input, Output
 from dash.exceptions import PreventUpdate
 import json
-import os
-import glob
 import requests
 
 # TODO: Correctly link all of the ucf files and their names
 # TODO: Also be able to link schemas the schemas folder
 # TODO: Make this save_path route to AWS storage
 
-# This is OK because this is a public repo
+# Making requests is OK because this is a public repo
 UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/dev-merge/UCFormatter/UCFs'
 # schema_link = 'https://github.com/CIDARLAB/Cello-UCF/develop/schemas/v2/<xxx.schema.json>'
 
@@ -37,10 +35,6 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div(
     children=[
-        # Data Storage in Local Meomory
-        # dcc.Store(id='ucf-data', storage_type='local'),
-    
-        # html components
         html.H1(
             children='CELLO-V3',
             style={
