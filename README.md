@@ -5,11 +5,12 @@ CELLO-3.0 is a software package for designing and simulating genetic circuits. I
 ## Installation
 
 To install CELLO-3.0, simply clone the repository and run the setup script:
-'''
+
+```
 git clone https://github.com/your-username/cello-3.0.git
 cd cello-3.0
 python setup.py install
-'''
+```
 
 ## Usage
 
