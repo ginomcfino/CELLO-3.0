@@ -1,11 +1,15 @@
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, dcc, html, Input, Output, State, ctx
 from dash.exceptions import PreventUpdate
+import dash
+# import dash_daq as daq
 import json
 import requests
 import redis
 import subprocess
 
 # NOTE: automatically starting Redis, may be disabled
+
+
 def start_redis_server():
     cmd = ['redis-cli', 'ping']
     try:
@@ -91,7 +95,7 @@ app.layout = html.Div(
 
         html.Div(
             children=[
-                html.Label('Select UCF template: '),
+                html.Label('Select UCF template'),
                 html.Div(
                     children=[
                         html.Div(
@@ -103,7 +107,7 @@ app.layout = html.Div(
                             style={'flex': 1}
                         ),
                         html.Button(
-                            'Confirm',
+                            '1. select UCF',
                             id='confirm-select',
                             style={'padding-bottom': -50}
                         ),
@@ -132,34 +136,39 @@ app.layout = html.Div(
                     }
                 ),
                 html.Br(),
+                # daq.Indicator(
+                #     id='indicator-light',
+                #     value=True,
+                #     color='red'
+                # ),
                 html.Button(
-                    'refresh',
+                    '2. confirm selection',
                     id='refresh-page',
                 ),
                 html.Br(),
                 html.Div(id='ucf_collection_names'),
                 html.Br(),
-                "Please select a collection to modify ",
+                "Pick a collection to modify ",
                 html.Div(
                     [
-                        html.Div(style={'flex':0.3}),
-                        
+                        html.Div(style={'flex': 0.3}),
+
                         html.Br(),
                         dcc.Dropdown(
-                                    ucf_list, 
-                                    ucf_list[0], 
-                                    id='collection-select',
-                                    style= {
-                                        'flex' : 0.4,
-                                    }
+                            ucf_list,
+                            ucf_list[0],
+                            id='collection-select',
+                            style={
+                                'flex': 0.4,
+                            }
                         ),
-                        html.Div(style={'flex':0.3}),
+                        html.Div(style={'flex': 0.3}),
                         # dcc.Input(id='ucf_choice', value='-----', type='text'),
                         # html.Button(id='pick_ucf_button',
                         #             n_clicks=0, children='Submit')
                     ],
                     style={
-                        'display':'flex',
+                        'display': 'flex',
                         'flex-direction': 'row',
                         'alignItems': 'center',
                     }
@@ -169,6 +178,8 @@ app.layout = html.Div(
                 'text-align': 'center',
             }
         ),
+        
+        html.Br(),
 
         # signal value that triggers callbacks
         # dcc.Store('signal')
@@ -184,39 +195,89 @@ app.layout = html.Div(
     },
 )
 
+def generate_preview(ucf_data=None):
+    if ucf_data is None:
+        return html.Div(
+            'waiting for initialization... \nplease select a UCF',
+            style={
+                'height': '500px',
+                'overflow': 'auto',
+                'white-space': 'nowrap',
+                'background-color': 'rgba(128, 128, 128, 0.1)',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+            }
+        )
+    else:
+        return html.Div(
+            html.Pre(json.dumps(ucf_data[:10], indent=4)),
+            style={
+                'height': '500px',
+                'overflow': 'auto',
+                'white-space': 'nowrap',
+                'background-color': 'rgba(128, 128, 128, 0.1)',
+                'text-align': 'left'
+            }
+        )
 
 @app.callback(
     Output('ucf_preview', 'children'),
     Input('confirm-select', 'n_clicks'),
     State('ucf-select', 'value')
 )
-def select_ucf(_, ucf_name):
-    with requests.get(UCFs_folder+'/'+ucf_name) as response:
-        if response.ok:
-            ucf_data = json.loads(response.content)
-            r.set('ucf', response.content.decode())
-            print('\'Click\'')
-            print(json.dumps(ucf_data[0], indent=4))
-        else:
-            raise PreventUpdate
-    return html.Div(
-        html.Pre(json.dumps(ucf_data[:10], indent=4)),
-        style={
-            'height': '500px',
-            'overflow': 'auto',
-            'white-space': 'nowrap',
-            'background-color': 'rgba(128, 128, 128, 0.1)',
-            'text-align': 'left'
-        }
-    )
-
+def select_ucf(selectedUCF, ucf_name):
+    if selectedUCF is not None:
+        with requests.get(UCFs_folder+'/'+ucf_name) as response:
+            if response.ok:
+                ucf_data = json.loads(response.content)
+                r.set('ucf', response.content.decode())
+                print('\'Click\'')
+                print(json.dumps(ucf_data[0], indent=4))
+            else:
+                raise PreventUpdate
+        return html.Div(
+            html.Pre(json.dumps(ucf_data[:10], indent=4)),
+            style={
+                'height': '500px',
+                'overflow': 'auto',
+                'white-space': 'nowrap',
+                'background-color': 'rgba(128, 128, 128, 0.1)',
+                'text-align': 'left'
+            }
+        )
+    else:
+        return generate_preview()
 
 @app.callback(
-    Output('ucf_collection_names', 'children'),
+    Output('collection-select', 'options'),
     [Input('refresh-page', 'n_clicks')],
 )
-def wibblewobble(clicks):
-    if clicks is not None:
+def update_collections_dropdown(refresh):
+    if refresh is not None:
+        ucf = json.loads(r.get("ucf"))
+        collections = []
+        for c in ucf:
+            collections.append(c["collection"])
+        collections = list(set(collections))
+        options = [{'label': c, 'value': c} for c in collections]
+        return options
+    else:
+        return ['please REFRESH']
+
+@app.callback(
+    [Output('ucf_collection_names', 'children'),
+     Output('refresh-page', 'style')],
+    [Input('refresh-page', 'n_clicks'),
+     Input('confirm-select', 'n_clicks')],
+    [State('refresh-page', 'style')]
+)
+def autobots_roll_out(refresh_clicks, confirm_clicks, color):
+    triggered_id = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    print(triggered_id)
+    if triggered_id == 'confirm-select':
+        return '', {'background-color': '#fa3c4c'}
+    elif refresh_clicks is not None:
         ucf = json.loads(r.get("ucf"))
         collections = []
         for c in ucf:
@@ -225,10 +286,9 @@ def wibblewobble(clicks):
         display = []
         for c in collections:
             display.append(html.Li(c))
-        return html.Ul(display)
+        return html.Ul(display), {'background-color': '#7ddc1f'}
     else:
-        return ''
-
+        return '', {'background-color': '#fa3c4c'}
 
 if __name__ == '__main__':
     start_redis_server()
