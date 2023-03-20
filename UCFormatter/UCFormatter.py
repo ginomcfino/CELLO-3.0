@@ -24,12 +24,12 @@ def start_redis_server():
     subprocess.Popen(cmd)
     print('Redis server started.')
 
+def debug_print(msg):
+    print(f'\nDEBUG: {msg}\n')
 
 # Making requests is OK because this is a public repo
 UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/main/UCFormatter/UCFs'
-
-# TODO: link schemas from the schemas folder
-# schema_link = 'https://github.com/CIDARLAB/Cello-UCF/develop/schemas/v2/<xxx.schema.json>'
+schema_link = 'https://raw.githubusercontent.com/CIDARLAB/Cello-UCF/develop/schemas/v2'
 
 # Retrieves ucf-list
 ucf_list = None
@@ -148,7 +148,7 @@ app.layout = html.Div(
                 html.Br(),
                 html.Div(id='ucf_collection_names'),
                 html.Br(),
-                "Pick a collection to modify ",
+                "Choose a collection to modify ",
                 html.Div(
                     [
                         html.Div(style={'flex': 0.3}),
@@ -173,6 +173,14 @@ app.layout = html.Div(
                         'alignItems': 'center',
                     }
                 ),
+                html.Br(),
+                html.Div(
+                    id='schema-preview',
+                    style={
+                        'padding-left': '100px',
+                        'padding-right': '100px'
+                    }
+                ),
             ],
             style={
                 'text-align': 'center',
@@ -195,10 +203,10 @@ app.layout = html.Div(
     },
 )
 
-def generate_preview(ucf_data=None):
+def generate_ucf_preview(ucf_data=None):
     if ucf_data is None:
         return html.Div(
-            'waiting for initialization... \nplease select a UCF',
+            'please initialize UCF',
             style={
                 'height': '500px',
                 'overflow': 'auto',
@@ -220,13 +228,61 @@ def generate_preview(ucf_data=None):
                 'text-align': 'left'
             }
         )
+        
+def generate_schema_preview(schema=None):
+    if schema is None:
+        return html.Div(
+            'select a collection name to preview',
+            style={
+                'height': '300px',
+                'overflow': 'auto',
+                'white-space': 'nowrap',
+                'background-color': 'rgba(128, 128, 128, 0.1)',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+            }
+        )
+    else:
+        debug_print('loading schema')
+        return html.Div(
+            html.Pre(json.dumps(schema, indent=4)),
+            style={
+                'height': '500px',
+                'overflow': 'auto',
+                'white-space': 'nowrap',
+                'background-color': 'rgba(128, 128, 128, 0.1)',
+                'text-align': 'left'
+            }
+        )
+        
+@app.callback(
+    Output('schema-preview', 'children'),
+    [Input('collection-select', 'value')],
+    # Input('refresh-page', 'n_clicks')
+)
+def preview_schema(c_name):
+    with requests.get(schema_link+'/'+str(c_name)+'.schema.json') as response:
+        if response.ok:
+            schema = json.loads(response.content)
+            r.set('open-schema', response.content.decode())
+            print('\'Click\'')
+            print(json.dumps(schema, indent=4))
+            return generate_schema_preview(schema)
+        else:
+            print(response.status_code)
+            debug_print('empty schema preview')
+            return generate_schema_preview()
+    # else:
+        # return generate_schema_preview()
+    # return 0
 
 @app.callback(
     Output('ucf_preview', 'children'),
     Input('confirm-select', 'n_clicks'),
     State('ucf-select', 'value')
 )
-def select_ucf(selectedUCF, ucf_name):
+def preview_ucf(selectedUCF, ucf_name):
     if selectedUCF is not None:
         with requests.get(UCFs_folder+'/'+ucf_name) as response:
             if response.ok:
@@ -247,7 +303,7 @@ def select_ucf(selectedUCF, ucf_name):
             }
         )
     else:
-        return generate_preview()
+        return generate_ucf_preview()
 
 @app.callback(
     Output('collection-select', 'options'),
@@ -263,7 +319,7 @@ def update_collections_dropdown(refresh):
         options = [{'label': c, 'value': c} for c in collections]
         return options
     else:
-        return ['please REFRESH']
+        return ['first, confirm selection']
 
 @app.callback(
     [Output('ucf_collection_names', 'children'),
