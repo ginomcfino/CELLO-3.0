@@ -132,15 +132,37 @@ app.layout = html.Div(
                     }
                 ),
                 html.Br(),
+                html.Button(
+                    'refresh',
+                    id='refresh-page',
+                ),
+                html.Br(),
                 html.Div(id='ucf_collection_names'),
                 html.Br(),
+                "Please select a collection to modify ",
                 html.Div(
                     [
-                        "Please select a collection to modify: ",
-                        dcc.Input(id='ucf_choice', value='-----', type='text'),
+                        html.Div(style={'flex':0.3}),
+                        
+                        html.Br(),
+                        dcc.Dropdown(
+                                    ucf_list, 
+                                    ucf_list[0], 
+                                    id='collection-select',
+                                    style= {
+                                        'flex' : 0.4,
+                                    }
+                        ),
+                        html.Div(style={'flex':0.3}),
+                        # dcc.Input(id='ucf_choice', value='-----', type='text'),
                         # html.Button(id='pick_ucf_button',
                         #             n_clicks=0, children='Submit')
                     ],
+                    style={
+                        'display':'flex',
+                        'flex-direction': 'row',
+                        'alignItems': 'center',
+                    }
                 ),
             ],
             style={
@@ -191,18 +213,21 @@ def select_ucf(_, ucf_name):
 
 @app.callback(
     Output('ucf_collection_names', 'children'),
-    Input('confirm-select', 'n_clicks'),
+    [Input('refresh-page', 'n_clicks')],
 )
-def wibblewobble(click):
-    ucf = json.loads(r.get("ucf"))
-    collections = []
-    for c in ucf:
-        collections.append(c["collection"])
-    collections = list(set(collections))
-    display = []
-    for c in collections:
-        display.append(html.Li(c))
-    return html.Ul(display)
+def wibblewobble(clicks):
+    if clicks is not None:
+        ucf = json.loads(r.get("ucf"))
+        collections = []
+        for c in ucf:
+            collections.append(c["collection"])
+        collections = list(set(collections))
+        display = []
+        for c in collections:
+            display.append(html.Li(c))
+        return html.Ul(display)
+    else:
+        return ''
 
 
 if __name__ == '__main__':
