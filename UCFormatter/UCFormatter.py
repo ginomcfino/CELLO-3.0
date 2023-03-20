@@ -1,14 +1,14 @@
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State
 from dash.exceptions import PreventUpdate
 import json
 import requests
+import redis
 
-# TODO: Correctly link all of the ucf files and their names
-# TODO: Also be able to link schemas the schemas folder
-# TODO: Make this save_path route to AWS storage
+# NOTE: have to run 'redis-server' in terminal before starting this webapp
 
 # Making requests is OK because this is a public repo
-UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/dev-merge/UCFormatter/UCFs'
+UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/dev/UCFormatter/UCFs'
+# TODO: link schemas from the schemas folder
 # schema_link = 'https://github.com/CIDARLAB/Cello-UCF/develop/schemas/v2/<xxx.schema.json>'
 
 # Retrieves ucf-list
@@ -24,11 +24,10 @@ if ucf_resp.ok:
 else:
     print(f"Failed to get file contents. Status code: {ucf_resp.status_code}")
 
-
-# TODO: Implement AWS S3 to host UCF Files
-# TODO: Retrieve UCF files with REST API
 # TODO: Implement AWS ElastiCache for in-memory storage
 
+# set up in-memory caching for variables w redis
+r = redis.Redis(host='localhost', port=6379, db=0)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
@@ -76,64 +75,85 @@ app.layout = html.Div(
 
         html.Div(
             children=[
-                html.Div(children=[
-                    html.Label('Select UCF template: '),
-                    dcc.Dropdown(ucf_list, ucf_list[0], id='ucf_select'),
-
-                    html.Br(),
-                ], style={'padding': 10,
-                          'flex': 1,
-                          'padding-left': '100px',
-                          'padding-right': '100px'
-                          }
+                html.Label('Select UCF template: '),
+                html.Div(
+                    children=[
+                        html.Div(
+                            children=[
+                                dcc.Dropdown(
+                                    ucf_list, ucf_list[0], id='ucf-select'),
+                                html.Br(),
+                            ],
+                            style={'flex': 1}
+                        ),
+                        html.Button(
+                            'Confirm',
+                            id='confirm-select',
+                            style={'padding-bottom': -50}
+                        ),
+                    ], style={
+                        'display': 'flex',
+                        'align-items': 'stretch',
+                        'flex-direction': 'row',
+                        'padding-left': '100px',
+                        'padding-right': '100px',
+                    }
                 ),
             ],
             style={
                 'textAlign': 'center',
-                'display': 'flex',
-                'flex-direction': 'row'
             }
         ),
 
-        html.Div([
-            html.H5('UCF preview: '),
-            html.Div(id='ucf_preview', style={
-                'padding-left': '100px',
-                'padding-right': '100px'
-            }),
-            html.Br(),
-            html.Div([
-                "Please select a collection to modify: ",
-                dcc.Input(id='ucf_choice', value='-----', type='text'),
-                html.Button(id='pick_ucf_button',
-                            n_clicks=0, children='Submit')
+        html.Div(
+            [
+                html.H5('UCF preview: '),
+                html.Div(
+                    id='ucf_preview',
+                    style={
+                        'padding-left': '100px',
+                        'padding-right': '100px'
+                    }
+                ),
+                html.Br(),
+                html.Div(
+                    [
+                        "Please select a collection to modify: ",
+                        dcc.Input(id='ucf_choice', value='-----', type='text'),
+                        html.Button(id='pick_ucf_button',
+                                    n_clicks=0, children='Submit')
+                    ],
+                ),
+                html.Br(),
+                html.P(id='ucf_collection_names')
             ],
-            ),
-            html.Br(),
-            html.P(id='ucf_collection_names')
-        ],
             style={
                 'text-align': 'center',
-        }
+            }
         ),
-
 
     ],
     style={
         'display': 'flex',
         'flex-direction': 'column',
-    }
+        # for 'night mode'
+        # 'backgroundColor': 'black',
+        # 'color': 'white',
+        # 'padding': '0'
+    },
 )
 
 
 @app.callback(
     Output('ucf_preview', 'children'),
-    Input('ucf_select', 'value')
+    Input('confirm-select', 'n_clicks'),
+    State('ucf-select', 'value')
 )
-def select_ucf(ucf_name):    
+def select_ucf(_, ucf_name):
     with requests.get(UCFs_folder+'/'+ucf_name) as response:
         if response.ok:
             ucf_data = json.loads(response.content)
+            r.set('ucf', str(ucf_data))
             print('\'Click\'')
             print(json.dumps(ucf_data[0], indent=4))
         else:
@@ -148,7 +168,7 @@ def select_ucf(ucf_name):
             'text-align': 'left'
         }
     )
-    
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
