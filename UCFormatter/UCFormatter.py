@@ -3,8 +3,23 @@ from dash.exceptions import PreventUpdate
 import json
 import requests
 import redis
+import subprocess
 
-# NOTE: have to run 'redis-server' in terminal before starting this webapp
+# NOTE: automatically starting Redis, may be disabled
+def start_redis_server():
+    cmd = ['redis-cli', 'ping']
+    try:
+        subprocess.check_output(cmd)
+        print('Redis server is already running.')
+        return
+    except:
+        pass
+
+    # Start Redis server
+    cmd = ['redis-server']
+    subprocess.Popen(cmd)
+    print('Redis server started.')
+
 
 # Making requests is OK because this is a public repo
 UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/main/UCFormatter/UCFs'
@@ -191,4 +206,5 @@ def wibblewobble(click):
 
 
 if __name__ == '__main__':
+    start_redis_server()
     app.run_server(debug=True)
