@@ -7,7 +7,8 @@ import redis
 # NOTE: have to run 'redis-server' in terminal before starting this webapp
 
 # Making requests is OK because this is a public repo
-UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/dev/UCFormatter/UCFs'
+UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/main/UCFormatter/UCFs'
+
 # TODO: link schemas from the schemas folder
 # schema_link = 'https://github.com/CIDARLAB/Cello-UCF/develop/schemas/v2/<xxx.schema.json>'
 
@@ -24,7 +25,7 @@ if ucf_resp.ok:
 else:
     print(f"Failed to get file contents. Status code: {ucf_resp.status_code}")
 
-# TODO: Implement AWS ElastiCache for in-memory storage
+# TODO: Implement AWS ElastiCache for in-memory storage (or Redis)
 
 # set up in-memory caching for variables w redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -116,21 +117,24 @@ app.layout = html.Div(
                     }
                 ),
                 html.Br(),
+                html.Div(id='ucf_collection_names'),
+                html.Br(),
                 html.Div(
                     [
                         "Please select a collection to modify: ",
                         dcc.Input(id='ucf_choice', value='-----', type='text'),
-                        html.Button(id='pick_ucf_button',
-                                    n_clicks=0, children='Submit')
+                        # html.Button(id='pick_ucf_button',
+                        #             n_clicks=0, children='Submit')
                     ],
                 ),
-                html.Br(),
-                html.P(id='ucf_collection_names')
             ],
             style={
                 'text-align': 'center',
             }
         ),
+
+        # signal value that triggers callbacks
+        # dcc.Store('signal')
 
     ],
     style={
@@ -153,7 +157,7 @@ def select_ucf(_, ucf_name):
     with requests.get(UCFs_folder+'/'+ucf_name) as response:
         if response.ok:
             ucf_data = json.loads(response.content)
-            r.set('ucf', str(ucf_data))
+            r.set('ucf', response.content.decode())
             print('\'Click\'')
             print(json.dumps(ucf_data[0], indent=4))
         else:
@@ -168,6 +172,22 @@ def select_ucf(_, ucf_name):
             'text-align': 'left'
         }
     )
+
+
+@app.callback(
+    Output('ucf_collection_names', 'children'),
+    Input('confirm-select', 'n_clicks'),
+)
+def wibblewobble(click):
+    ucf = json.loads(r.get("ucf"))
+    collections = []
+    for c in ucf:
+        collections.append(c["collection"])
+    collections = list(set(collections))
+    display = []
+    for c in collections:
+        display.append(html.Li(c))
+    return html.Ul(display)
 
 
 if __name__ == '__main__':
