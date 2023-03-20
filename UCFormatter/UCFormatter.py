@@ -1,15 +1,33 @@
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State
+from dash.exceptions import PreventUpdate
 import json
-import os
-import glob
+import requests
+import redis
 
-ucf_path = '../../IO/inputs'
-cur_dir = os.getcwd()
-os.chdir(ucf_path)
-extension = '.json'
-ucf_files = sorted(list(glob.glob('*' + extension)))
-os.chdir(cur_dir)
+# NOTE: have to run 'redis-server' in terminal before starting this webapp
 
+# Making requests is OK because this is a public repo
+UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/dev/UCFormatter/UCFs'
+# TODO: link schemas from the schemas folder
+# schema_link = 'https://github.com/CIDARLAB/Cello-UCF/develop/schemas/v2/<xxx.schema.json>'
+
+# Retrieves ucf-list
+ucf_list = None
+ucf_txt_url = UCFs_folder + '/ucf-list.txt'
+ucf_resp = requests.get(ucf_txt_url)
+if ucf_resp.ok:
+    file_contents = ucf_resp.content.decode('utf-8')
+    lines = file_contents.split('\n')
+    lines = list(filter(lambda x: x != '', lines))
+    # print(lines)
+    ucf_list = lines
+else:
+    print(f"Failed to get file contents. Status code: {ucf_resp.status_code}")
+
+# TODO: Implement AWS ElastiCache for in-memory storage
+
+# set up in-memory caching for variables w redis
+r = redis.Redis(host='localhost', port=6379, db=0)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
@@ -26,7 +44,7 @@ app.layout = html.Div(
                 'height': 'max-height',
             }
         ),
-        html.H5(
+        html.H3(
             '''UCFormatter Tool''',
             style={'flex': 1, 'textAlign': 'center', },
         ),
@@ -39,24 +57,11 @@ app.layout = html.Div(
                     '''
                     The Cello software designs the DNA sequences for programmable circuits 
                     based on a high-level software description and a library of characterized 
-                    DNA parts representing Boolean logic gates.''',
-                    style={'flex': 0.6, 'textAlign': 'center'},
-                ),
-                html.Div(style={'flex': 0.2, 'textAlign': 'center'}),
-            ],
-            style={
-                'display': 'flex',
-                'flex-direction': 'row',
-            }
-        ),
-        html.Div(
-            children=[
-                html.Div(style={'flex': 0.2, 'textAlign': 'center'}),
-                html.Div(
-                    '''
+                    DNA parts representing Boolean logic gates.
                     The user constraints file (UCF) is
                     a JavaScript Object Notation (JSON) file that describes 
-                    a part and gate library for a particular organism.''',
+                    a part and gate library for a particular organism.
+                    ''',
                     style={'flex': 0.6, 'textAlign': 'center'},
                 ),
                 html.Div(style={'flex': 0.2, 'textAlign': 'center'}),
@@ -66,96 +71,103 @@ app.layout = html.Div(
                 'flex-direction': 'row',
             }
         ),
-
         html.Br(),
 
         html.Div(
             children=[
-                html.Div(children=[
-                    html.Label('Select UCF template: '),
-                    dcc.Dropdown(ucf_files, ucf_files[0], id='ucf_select'),
-
-                    html.Br(),
-                    # html.Label('Multi-Select Dropdown'),
-                    # dcc.Dropdown(['New York City', 'Montréal', 'San Francisco'],
-                    #              ['Montréal', 'San Francisco'],
-                    #              multi=True),
-
-                    # html.Br(),
-                    # html.Label('Radio Items'),
-                    # dcc.RadioItems(['New York City', 'Montréal',
-                    #                'San Francisco'], 'Montréal'),
-                ], style={'padding': 10, 'flex': 1}),
-
-                # html.Div(children=[
-                #     html.Label('Checkboxes'),
-                #     dcc.Checklist(['New York City', 'Montréal', 'San Francisco'],
-                #                 ['Montréal', 'San Francisco']
-                #     ),
-
-                #     html.Br(),
-                #     html.Label('Text Input'),
-                #     dcc.Input(value='MTL', type='text'),
-
-                #     html.Br(),
-                #     html.Label('Slider'),
-                #     dcc.Slider(
-                #         min=0,
-                #         max=9,
-                #         marks={i: f'Label {i}' if i == 1 else str(i) for i in range(1, 6)},
-                #         value=5,
-                #     ),
-                # ], style={'padding': 10, 'flex': 1})
+                html.Label('Select UCF template: '),
+                html.Div(
+                    children=[
+                        html.Div(
+                            children=[
+                                dcc.Dropdown(
+                                    ucf_list, ucf_list[0], id='ucf-select'),
+                                html.Br(),
+                            ],
+                            style={'flex': 1}
+                        ),
+                        html.Button(
+                            'Confirm',
+                            id='confirm-select',
+                            style={'padding-bottom': -50}
+                        ),
+                    ], style={
+                        'display': 'flex',
+                        'align-items': 'stretch',
+                        'flex-direction': 'row',
+                        'padding-left': '100px',
+                        'padding-right': '100px',
+                    }
+                ),
             ],
             style={
                 'textAlign': 'center',
-                'display': 'flex',
-                'flex-direction': 'row'
             }
         ),
 
-        html.Div([
-            html.Div([
-                "Please select a collection to modify: ",
-                dcc.Input(id='ucf_choice', value='-----', type='text'),
-                html.Button(id='pick_ucf_button',
-                            n_clicks=0, children='Submit')
+        html.Div(
+            [
+                html.H5('UCF preview: '),
+                html.Div(
+                    id='ucf_preview',
+                    style={
+                        'padding-left': '100px',
+                        'padding-right': '100px'
+                    }
+                ),
+                html.Br(),
+                html.Div(
+                    [
+                        "Please select a collection to modify: ",
+                        dcc.Input(id='ucf_choice', value='-----', type='text'),
+                        html.Button(id='pick_ucf_button',
+                                    n_clicks=0, children='Submit')
+                    ],
+                ),
+                html.Br(),
+                html.P(id='ucf_collection_names')
             ],
-            ),
-            html.Br(),
-            html.P(
-                id='ucf_name',
-                style={
-                    'tex-align': 'center',
-                    'flex': 0.8
-                }
-            ),
-        ],
             style={
                 'text-align': 'center',
-        }
-        )
+            }
+        ),
 
     ],
     style={
         'display': 'flex',
         'flex-direction': 'column',
-    }
+        # for 'night mode'
+        # 'backgroundColor': 'black',
+        # 'color': 'white',
+        # 'padding': '0'
+    },
 )
 
 
 @app.callback(
-    Output('ucf_name', 'children'),
-    Input('ucf_select', 'value')
+    Output('ucf_preview', 'children'),
+    Input('confirm-select', 'n_clicks'),
+    State('ucf-select', 'value')
 )
-def this_function_name_does_not_even_matter(ucf_name):
-    with open(os.path.join(ucf_path, ucf_name), 'r') as f:
-        ucf_json = json.load(f)
-        print('\'Click\'')
-        print(json.dumps(ucf_json[0], indent=4))
-        print()
-        print()
-    return ucf_name
+def select_ucf(_, ucf_name):
+    with requests.get(UCFs_folder+'/'+ucf_name) as response:
+        if response.ok:
+            ucf_data = json.loads(response.content)
+            r.set('ucf', str(ucf_data))
+            print('\'Click\'')
+            print(json.dumps(ucf_data[0], indent=4))
+        else:
+            raise PreventUpdate
+    return html.Div(
+        html.Pre(json.dumps(ucf_data[:10], indent=4)),
+        style={
+            'height': '500px',
+            'overflow': 'auto',
+            'white-space': 'nowrap',
+            'background-color': 'rgba(128, 128, 128, 0.1)',
+            'text-align': 'left'
+        }
+    )
 
 
 if __name__ == '__main__':
