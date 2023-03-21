@@ -59,9 +59,9 @@ app.layout = html.Div(
             children='CELLO-V3',
             style={
                 'textAlign': 'center',
-                'color': '#111111',
+                'color': '#0073e5',
                 'flex': 1,
-                'backgroundColor': 'grey',
+                'backgroundColor': '#afafaf',
                 'height': 'max-height',
             }
         ),
@@ -291,6 +291,7 @@ def autobots_roll_out(refresh_clicks, confirm_clicks, color):
     triggered_id = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
     print(triggered_id)
     if triggered_id == 'confirm-select':
+        # {'background-color': '#d62d20'}
         return {'background-color': '#fa3c4c'}
     elif refresh_clicks is not None:
         ucf = json.loads(r.get("ucf"))
@@ -303,7 +304,7 @@ def autobots_roll_out(refresh_clicks, confirm_clicks, color):
             display.append(html.Li(c))
         return {'background-color': '#7ddc1f'}
     else:
-        return {'background-color': '#fa3c4c'}
+        return {'background-color': '#d62d20'}
 
 
 @app.callback(
