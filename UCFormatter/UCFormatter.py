@@ -11,6 +11,8 @@ import math
 
 # automatically starting Redis, may be disabled
 
+def debug_print(msg):
+    print(f'\nDEBUG: {msg}\n')
 
 def start_redis_server():
     cmd = ['redis-cli', 'ping']
@@ -18,17 +20,14 @@ def start_redis_server():
         subprocess.check_output(cmd)
         print('Redis server is already running.')
         return
-    except:
+    except Exception as e:
+        debug_print(e)
         pass
 
     # Start Redis server
     cmd = ['redis-server']
     subprocess.Popen(cmd)
     print('Redis server started.')
-
-
-def debug_print(msg):
-    print(f'\nDEBUG: {msg}\n')
 
 def generate_ucf_preview(ucf=None, slider_range=None,):
     if ucf is None:
@@ -182,7 +181,7 @@ app.layout = html.Div(
                     }
                 ),
                 html.Div(
-                    children=generate_ucf_preview(json.loads(r.get("ucf"))),
+                    children=generate_ucf_preview(),
                     id='ucf-preview',
                     style={
                         'padding-left': '100px',
