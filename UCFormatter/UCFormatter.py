@@ -5,10 +5,13 @@ import json
 import requests
 import redis
 import subprocess
+import math
 
 # TODO: refactor code
 
 # automatically starting Redis, may be disabled
+
+
 def start_redis_server():
     cmd = ['redis-cli', 'ping']
     try:
@@ -27,6 +30,35 @@ def start_redis_server():
 def debug_print(msg):
     print(f'\nDEBUG: {msg}\n')
 
+def generate_ucf_preview(ucf=None, slider_range=None,):
+    if ucf is None:
+        return html.Div(
+            'awaiting UCF initialization...',
+            style={
+                'min-height': '300px',
+                'overflow': 'auto',
+                'white-space': 'nowrap',
+                'background-color': 'rgba(128, 128, 128, 0.1)',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+            }
+        )
+    slice = []
+    if slider_range is None:
+        slice = ucf[:10]
+    else:
+        slice = ucf[slider_range[0]:slider_range[1]]
+    return html.Div(
+        html.Pre(json.dumps(slice, indent=4)),
+        style={
+            'height': '500px',
+            'overflow': 'auto',
+            'white-space': 'nowrap',
+            'background-color': 'rgba(128, 128, 128, 0.1)',
+            'text-align': 'left'
+        }
+    )
 
 # Making requests is OK because this is a public repo
 UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/main/UCFormatter/UCFs'
@@ -35,15 +67,19 @@ schema_link = 'https://raw.githubusercontent.com/CIDARLAB/Cello-UCF/develop/sche
 # Retrieves ucf-list
 ucf_list = None
 ucf_txt_url = UCFs_folder + '/ucf-list.txt'
-ucf_resp = requests.get(ucf_txt_url)
-if ucf_resp.ok:
-    file_contents = ucf_resp.content.decode('utf-8')
-    lines = file_contents.split('\n')
-    lines = list(filter(lambda x: x != '', lines))
-    # print(lines)
-    ucf_list = lines
-else:
-    print(f"Failed to get file contents. Status code: {ucf_resp.status_code}")
+try:
+    ucf_resp = requests.get(ucf_txt_url)
+    if ucf_resp.ok:
+        file_contents = ucf_resp.content.decode('utf-8')
+        lines = file_contents.split('\n')
+        lines = list(filter(lambda x: x != '', lines))
+        # print(lines)
+        ucf_list = lines
+    else:
+        print(f"Failed to get file contents. Status code: {ucf_resp.status_code}")
+except Exception as e:
+    debug_print(str(e))
+    ucf_list=['please researt the app once connected to internet']
 
 # TODO: Implement AWS ElastiCache for in-memory storage (or Redis)
 
@@ -125,36 +161,51 @@ app.layout = html.Div(
                 'textAlign': 'center',
             }
         ),
-
         html.Div(
             [
                 html.H5('UCF preview: '),
                 html.Div(
-                    id='ucf_preview',
+                    dcc.RangeSlider(
+                        id='ucf-range-slider',
+                        min=0,
+                        max=30,
+                        step=1,
+                        value=[0, 10],
+                        pushable=10,
+                        drag_value=[1],
+                        marks=None,
+                        tooltip={'placement': 'bottom'},
+                    ),
                     style={
                         'padding-left': '100px',
                         'padding-right': '100px'
                     }
                 ),
-                html.Br(),
+                html.Div(
+                    children=generate_ucf_preview(json.loads(r.get("ucf"))),
+                    id='ucf-preview',
+                    style={
+                        'padding-left': '100px',
+                        'padding-right': '100px'
+                    }
+                ),
                 # daq.Indicator(
                 #     id='indicator-light',
                 #     value=True,
                 #     color='red'
                 # ),
+                html.Br(),
+                html.Br(),
                 html.Button(
                     '2. confirm selection',
                     id='refresh-page',
                 ),
                 html.Br(),
-                # html.Div(id='ucf_collection_names'),
-                # html.Br(),
                 html.Br(),
-                "Choose a collection to modify ",
+                html.Label("Choose a collection to modify"),
                 html.Div(
                     [
                         html.Div(style={'flex': 0.3}),
-
                         html.Br(),
                         dcc.Dropdown(
                             ucf_list,
@@ -230,33 +281,36 @@ def generate_schema_preview(schema=None):
             }
         )
 
-
 @app.callback(
-    Output('ucf_preview', 'children'),
+    Output('ucf-range-slider', 'disabled'),
+    Output('ucf-preview', 'children'),
+    Output('ucf-range-slider', 'value'),
+    Output('ucf-range-slider', 'max'),
     Input('confirm-select', 'n_clicks'),
-    State('ucf-select', 'value')
+    Input('ucf-range-slider', 'value'),
+    State('ucf-select', 'value'),
+    State('ucf-range-slider', 'disabled')
 )
-# NOTE: save selected ucf into cache on ucf btn click, and loads preview
-# DEFAULT: loads preview of the first UCF in the list
-def preview_ucf(selectedUCF, ucf_name):
-    with requests.get(UCFs_folder+'/'+ucf_name) as response:
-        if response.ok:
-            ucf_data = json.loads(response.content)
-            r.set('ucf', response.content.decode())
-            print('\'Click\'')
-            print(json.dumps(ucf_data[0], indent=4))
+# NOTE: save selected ucf into cache on ucf btn click
+def preview_ucf(selectedUCF, slider_value, ucf_name, slider_disabled):
+    if abs(slider_value[1] - slider_value[0]) != 10:
+        if slider_value[1] > slider_value[0]:
+            new_value = [slider_value[1] - 10, slider_value[1]]
         else:
-            raise PreventUpdate
-    return html.Div(
-        html.Pre(json.dumps(ucf_data[:10], indent=4)),
-        style={
-            'height': '500px',
-            'overflow': 'auto',
-            'white-space': 'nowrap',
-            'background-color': 'rgba(128, 128, 128, 0.1)',
-            'text-align': 'left'
-        }
-    )
+            new_value = [slider_value[0], slider_value[0] + 10]
+        slider_value = new_value
+    try:
+        with requests.get(UCFs_folder+'/'+ucf_name) as response:
+            if response.ok:
+                ucf_data = json.loads(response.content)
+                r.set('ucf', response.content.decode())
+                print('\'Click\'')
+                print(json.dumps(ucf_data[0], indent=4))
+                return False, generate_ucf_preview(ucf_data, slider_value), slider_value, len(ucf_data)
+            else:
+                return True, generate_ucf_preview(), slider_value, 30
+    except:
+        return True, generate_ucf_preview(), slider_value, 30
 
 
 @app.callback(
@@ -307,22 +361,42 @@ def autobots_roll_out(refresh_clicks, confirm_clicks, color):
         return {'background-color': '#d62d20'}
 
 
+# @app.callback(
+#     Output('ucf-range-slider', 'value'),
+#     Output('ucf-preview', 'children'),
+#     Input('ucf-range-slider', 'value'),
+# )
+# # simply ensures the range slider for UCF does note go 
+# def update_range_slider(value):
+#     ucf = json.loads(r.get('ucf'))
+#     if abs(value[1] - value[0]) != 10:
+#         if value[1] > value[0]:
+#             new_value = [value[1] - 10, value[1]]
+#         else:
+#             new_value = [value[0], value[0] + 10]
+#         value = new_value
+#     return value, generate_ucf_preview(ucf, value)
+
+
 @app.callback(
     Output('schema-preview', 'children'),
     [Input('collection-select', 'value')],
 )
 def preview_schema(c_name):
-    with requests.get(schema_link+'/'+str(c_name)+'.schema.json') as response:
-        if response.ok:
-            schema = json.loads(response.content)
-            r.set('open-schema', response.content.decode())
-            print('\'Click\'')
-            print(json.dumps(schema, indent=4))
-            return generate_schema_preview(schema)
-        else:
-            debug_print(str(response.status_code))
-            debug_print('empty schema preview')
-            return generate_schema_preview()
+    try:
+        with requests.get(schema_link+'/'+str(c_name)+'.schema.json') as response:
+            if response.ok:
+                schema = json.loads(response.content)
+                r.set('open-schema', response.content.decode())
+                print('\'Click\'')
+                print(json.dumps(schema, indent=4))
+                return generate_schema_preview(schema)
+            else:
+                debug_print(str(response.status_code))
+                debug_print('empty schema preview')
+                return generate_schema_preview()
+    except:
+        return generate_schema_preview()
 
 
 if __name__ == '__main__':
