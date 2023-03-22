@@ -1,11 +1,11 @@
 from dash import Dash, dcc, html, Input, Output, State, ctx
 from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
 import dash
 import json
 import requests
 import redis
 import subprocess
-import math
 
 # TODO: refactor code
 
@@ -85,10 +85,13 @@ except Exception as e:
 # set up in-memory caching for variables w redis
 r = redis.Redis(host='localhost', port=6379, db=0)
 
+# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# external_stylesheets += [dbc.themes.CYBORG]
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div(
+    className='dark-theme',
     children=[
         html.H1(
             children='CELLO-V3',
@@ -237,6 +240,8 @@ app.layout = html.Div(
         ),
 
         html.Br(),
+        
+        
 
         # signal value that triggers callbacks
         # dcc.Store('signal')
