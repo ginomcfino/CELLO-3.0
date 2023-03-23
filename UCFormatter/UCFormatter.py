@@ -6,58 +6,14 @@ import json
 import requests
 import redis
 import subprocess
+import atexit
+
+from helper import *
 
 # TODO: refactor code
 
 # automatically starting Redis, may be disabled
 
-def debug_print(msg):
-    print(f'\nDEBUG: {msg}\n')
-
-def start_redis_server():
-    cmd = ['redis-cli', 'ping']
-    try:
-        subprocess.check_output(cmd)
-        print('Redis server is already running.')
-        return
-    except Exception as e:
-        debug_print(e)
-        pass
-
-    # Start Redis server
-    cmd = ['redis-server']
-    subprocess.Popen(cmd)
-    print('Redis server started.')
-
-def generate_ucf_preview(ucf=None, slider_range=None,):
-    if ucf is None:
-        return html.Div(
-            'awaiting UCF initialization...',
-            style={
-                'min-height': '300px',
-                'overflow': 'auto',
-                'white-space': 'nowrap',
-                'background-color': 'rgba(128, 128, 128, 0.1)',
-                'display': 'flex',
-                'align-items': 'center',
-                'justify-content': 'center',
-            }
-        )
-    slice = []
-    if slider_range is None:
-        slice = ucf[:10]
-    else:
-        slice = ucf[slider_range[0]:slider_range[1]]
-    return html.Div(
-        html.Pre(json.dumps(slice, indent=4)),
-        style={
-            'height': '500px',
-            'overflow': 'auto',
-            'white-space': 'nowrap',
-            'background-color': 'rgba(128, 128, 128, 0.1)',
-            'text-align': 'left'
-        }
-    )
 
 # Making requests is OK because this is a public repo
 UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/main/UCFormatter/UCFs'
@@ -257,33 +213,7 @@ app.layout = html.Div(
     },
 )
 
-
-def generate_schema_preview(schema=None):
-    if schema is None:
-        return html.Div(
-            'select a collection name to preview',
-            style={
-                'height': '300px',
-                'overflow': 'auto',
-                'white-space': 'nowrap',
-                'background-color': 'rgba(128, 128, 128, 0.1)',
-                'display': 'flex',
-                'align-items': 'center',
-                'justify-content': 'center',
-            }
-        )
-    else:
-        debug_print('loading schema')
-        return html.Div(
-            html.Pre(json.dumps(schema, indent=4)),
-            style={
-                'min-height': '300px',
-                'overflow': 'auto',
-                'white-space': 'nowrap',
-                'background-color': 'rgba(128, 128, 128, 0.1)',
-                'text-align': 'left'
-            }
-        )
+# CALLBACKS SECTION
 
 @app.callback(
     Output('ucf-range-slider', 'disabled'),
@@ -402,7 +332,7 @@ def preview_schema(c_name):
     except:
         return generate_schema_preview()
 
-
 if __name__ == '__main__':
     start_redis_server()
+    atexit.register(stop_redis_server)
     app.run_server(debug=True)

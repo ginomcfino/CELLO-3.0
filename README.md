@@ -4,13 +4,31 @@ CELLO-3.0 is a software package for designing and simulating genetic circuits. I
 
 ## Installation
 
-To install CELLO-3.0, simply clone the repository and run the setup script:
+To install CELLO-3.0, simply follow these steps:
 
+First, install [Redis](https://redis.io/docs/getting-started/installation/) on your computer
+
+On MacOS:
+```
+brew install redis
+```
+(for other platforms, please check Redis installation guide)
+
+Now you are ready to download an run Cello-v3:
 ```
 git clone https://github.com/your-username/cello-3.0.git
 cd cello-3.0
-python setup.py install
+pip install -r req.txt
 ```
+
+#### Execution:
+
+Example, running UCFormatter tool:
+```
+cd UCFormatter
+python UCFormatter.py
+```
+Navigate to [localhost:8050]() to see use UCFormatter.
 
 ## Usage
 
