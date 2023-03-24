@@ -202,6 +202,38 @@ app.layout = html.Div(
         ),
         html.Br(),
 
+        html.Div(
+            children=[
+                dcc.RangeSlider(
+                    id='ucf-range-slider-2',
+                    min=0,
+                    max=30,
+                    step=1,
+                    value=[0, 10],
+                    pushable=10,
+                    drag_value=[1],
+                    marks=None,
+                    tooltip={'placement': 'bottom'},
+                ),
+                html.Div(
+                    children=generate_ucf_preview(),
+                    id='ucf-preview-2',
+                ),
+                html.Br(),
+                html.Button(
+                    'SUBMIT',
+                    id='submit-modification',
+                    # style={'padding-bottom': -50}
+                ),
+            ],
+            style={
+                'padding-left': '100px',
+                'padding-right': '100px',
+                'text-align': 'center',
+            }
+        ),
+        html.Br(),
+
     ],
     style={
         'display': 'flex',
@@ -219,6 +251,7 @@ app.layout = html.Div(
 @app.callback(
     Output('ucf-range-slider', 'disabled'),
     Output('ucf-preview', 'children'),
+    Output('ucf-preview-2', 'children'),
     Output('ucf-range-slider', 'value'),
     Output('ucf-range-slider', 'max'),
     Input('confirm-select', 'n_clicks'),
@@ -241,11 +274,11 @@ def preview_ucf(selectedUCF, slider_value, ucf_name, slider_disabled):
                 r.set('ucf', response.content.decode())
                 print('\'Click\'')
                 print(json.dumps(ucf_data[0], indent=4))
-                return False, generate_ucf_preview(ucf_data, slider_value), slider_value, len(ucf_data)
+                return False, generate_ucf_preview(ucf_data, slider_value), generate_ucf_preview(ucf_data), slider_value, len(ucf_data)
             else:
-                return True, generate_ucf_preview(), slider_value, 30
+                return True, generate_ucf_preview(), generate_ucf_preview(), slider_value, 30
     except:
-        return True, generate_ucf_preview(), slider_value, 30
+        return True, generate_ucf_preview(), generate_ucf_preview(), slider_value, 30
 
 
 @app.callback(
