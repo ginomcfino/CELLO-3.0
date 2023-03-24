@@ -204,6 +204,7 @@ app.layout = html.Div(
 
         html.Div(
             children=[
+                html.H5('Modified Preview: '),
                 dcc.RangeSlider(
                     id='ucf-range-slider-2',
                     min=0,
@@ -238,10 +239,6 @@ app.layout = html.Div(
     style={
         'display': 'flex',
         'flex-direction': 'column',
-        # for 'night mode'
-        # 'backgroundColor': 'black',
-        # 'color': 'white',
-        # 'padding': '0'
     },
 )
 
@@ -261,12 +258,7 @@ app.layout = html.Div(
 )
 # NOTE: generate UCF preview and sets slider value
 def preview_ucf(selectedUCF, slider_value, ucf_name, slider_disabled):
-    if abs(slider_value[1] - slider_value[0]) != 10:
-        if slider_value[1] > slider_value[0]:
-            new_value = [slider_value[1] - 10, slider_value[1]]
-        else:
-            new_value = [slider_value[0], slider_value[0] + 10]
-        slider_value = new_value
+    slider_value = slider_helper(slider_value)
     try:
         with requests.get(UCFs_folder+'/'+ucf_name) as response:
             if response.ok:

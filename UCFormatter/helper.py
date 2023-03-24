@@ -34,6 +34,15 @@ def stop_redis_server():
         redis_server_process.terminate()
         redis_server_process.wait()
         print('Redis server stopped.')
+        
+def slider_helper(slider_value):
+    if abs(slider_value[1] - slider_value[0]) != 10:
+        if slider_value[1] > slider_value[0]:
+            new_value = [slider_value[1] - 10, slider_value[1]]
+        else:
+            new_value = [slider_value[0], slider_value[0] + 10]
+        slider_value = new_value
+    return slider_value
 
 def generate_ucf_preview(ucf=None, slider_range=None,):
     if ucf is None:
