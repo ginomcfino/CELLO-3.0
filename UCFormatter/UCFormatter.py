@@ -10,11 +10,6 @@ import atexit
 
 from helper import *
 
-# TODO: refactor code
-
-# automatically starting Redis, may be disabled
-
-
 # Making requests is OK because this is a public repo
 UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/main/UCFormatter/UCFs'
 schema_link = 'https://raw.githubusercontent.com/CIDARLAB/Cello-UCF/develop/schemas/v2'
@@ -36,8 +31,6 @@ except Exception as e:
     debug_print(str(e))
     ucf_list=['please researt the app once connected to internet']
 
-# TODO: Implement AWS ElastiCache for in-memory storage (or Redis)
-
 # set up in-memory caching for variables w redis
 r = redis.Redis(host='localhost', port=6379, db=0)
 
@@ -49,6 +42,8 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div(
     className='dark-theme',
     children=[
+        dcc.Store(id='open-schema', data=None),
+        
         html.H1(
             children='CELLO-V3',
             style={
@@ -197,6 +192,11 @@ app.layout = html.Div(
 
         html.Br(),
         
+        html.Div(
+            id='schema-input-form',
+            children='placeholder'
+        )
+        
         
 
         # signal value that triggers callbacks
@@ -214,7 +214,6 @@ app.layout = html.Div(
 )
 
 # CALLBACKS SECTION
-
 @app.callback(
     Output('ucf-range-slider', 'disabled'),
     Output('ucf-preview', 'children'),
@@ -295,42 +294,42 @@ def autobots_roll_out(refresh_clicks, confirm_clicks, color):
         return {'background-color': '#d62d20'}
 
 
-# @app.callback(
-#     Output('ucf-range-slider', 'value'),
-#     Output('ucf-preview', 'children'),
-#     Input('ucf-range-slider', 'value'),
-# )
-# # simply ensures the range slider for UCF does note go 
-# def update_range_slider(value):
-#     ucf = json.loads(r.get('ucf'))
-#     if abs(value[1] - value[0]) != 10:
-#         if value[1] > value[0]:
-#             new_value = [value[1] - 10, value[1]]
-#         else:
-#             new_value = [value[0], value[0] + 10]
-#         value = new_value
-#     return value, generate_ucf_preview(ucf, value)
-
-
 @app.callback(
     Output('schema-preview', 'children'),
-    [Input('collection-select', 'value')],
+    Output('schema-input-form', 'children'),
+    Output('open-schema', 'data'),
+    Input('collection-select', 'value'),
 )
 def preview_schema(c_name):
     try:
         with requests.get(schema_link+'/'+str(c_name)+'.schema.json') as response:
             if response.ok:
+                r.set(c_name, response.content.decode())
                 schema = json.loads(response.content)
-                r.set('open-schema', response.content.decode())
                 print('\'Click\'')
                 print(json.dumps(schema, indent=4))
-                return generate_schema_preview(schema)
+                return generate_schema_preview(schema), generate_input_components(schema['properties']), schema
             else:
                 debug_print(str(response.status_code))
                 debug_print('empty schema preview')
-                return generate_schema_preview()
+                return generate_schema_preview(), 'placeholder', None
     except:
-        return generate_schema_preview()
+        return generate_schema_preview(), 'placeholder', None
+
+# @app.callback(
+#     Output('schema-input-form', 'children'),
+#     # Input('collection-select', 'value'),
+#     Input('schema-inputs', 'data'),
+# )
+# def modify_schema(c_name):
+#     # open_schema = r.get('open-schema')
+#     open_schema = c_name
+#     if open_schema is None:
+#         return 'placeholder'
+#     else:
+#         schema = json.loads(open_schema)
+#         return generate_input_components(schema['properties'])
+
 
 if __name__ == '__main__':
     start_redis_server()
