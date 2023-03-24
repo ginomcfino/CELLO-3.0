@@ -26,10 +26,11 @@ try:
         # print(lines)
         ucf_list = lines
     else:
-        print(f"Failed to get file contents. Status code: {ucf_resp.status_code}")
+        print(
+            f"Failed to get file contents. Status code: {ucf_resp.status_code}")
 except Exception as e:
     debug_print(str(e))
-    ucf_list=['please researt the app once connected to internet']
+    ucf_list = ['please restart the app once connected to internet']
 
 # set up in-memory caching for variables w redis
 r = redis.Redis(host='localhost', port=6379, db=0)
@@ -43,7 +44,7 @@ app.layout = html.Div(
     className='dark-theme',
     children=[
         dcc.Store(id='open-schema', data=None),
-        
+
         html.H1(
             children='CELLO-V3',
             style={
@@ -191,16 +192,15 @@ app.layout = html.Div(
         ),
 
         html.Br(),
-        
         html.Div(
             id='schema-input-form',
-            children='placeholder'
-        )
-        
-        
-
-        # signal value that triggers callbacks
-        # dcc.Store('signal')
+            children='placeholder',
+            style={
+                'padding-left': '100px',
+                'padding-right': '100px'
+            }
+        ),
+        html.Br(),
 
     ],
     style={
@@ -214,6 +214,8 @@ app.layout = html.Div(
 )
 
 # CALLBACKS SECTION
+
+
 @app.callback(
     Output('ucf-range-slider', 'disabled'),
     Output('ucf-preview', 'children'),
@@ -224,7 +226,7 @@ app.layout = html.Div(
     State('ucf-select', 'value'),
     State('ucf-range-slider', 'disabled')
 )
-# NOTE: save selected ucf into cache on ucf btn click
+# NOTE: generate UCF preview and sets slider value
 def preview_ucf(selectedUCF, slider_value, ucf_name, slider_disabled):
     if abs(slider_value[1] - slider_value[0]) != 10:
         if slider_value[1] > slider_value[0]:
@@ -248,22 +250,30 @@ def preview_ucf(selectedUCF, slider_value, ucf_name, slider_disabled):
 
 @app.callback(
     Output('collection-select', 'options'),
-    [Input('refresh-page', 'n_clicks')],
+    Output('collection-select', 'value'),
+    Input('refresh-page', 'n_clicks'),
+    Input('confirm-select', 'n_clicks'),
+    Input('ucf-select', 'value'),
 )
 # NOTE: updates the collection dropdown items when confirm-selction is clicked
 # TODO: is it absolutely necessary?
 # DEFAULT: msg, causes 404 for schema retrieval
-def update_collections_dropdown(refresh):
-    if refresh is not None:
-        ucf = json.loads(r.get("ucf"))
-        collections = []
-        for c in ucf:
-            collections.append(c["collection"])
-        collections = list(set(collections))
-        options = [{'label': c, 'value': c} for c in collections]
-        return options
+def update_collections_dropdown(refresh_clicks, confirm_clicks, ucf_name):
+    triggered_id = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    if triggered_id == 'confirm-select':
+        return ['please confirm selection again.'], ''
     else:
-        return ['first, confirm selection']
+        if refresh_clicks is not None:
+            ucf = json.loads(r.get("ucf"))
+            collections = []
+            for c in ucf:
+                collections.append(c["collection"])
+            collections = list(set(collections))
+            # options = [{'label': c, 'value': c} for c in collections]
+            # return options
+            return collections, collections[0]
+        else:
+            return ['first, confirm selection'], ''
 
 
 @app.callback(
@@ -276,7 +286,7 @@ def update_collections_dropdown(refresh):
 # makes sure that the
 def autobots_roll_out(refresh_clicks, confirm_clicks, color):
     triggered_id = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
-    print(triggered_id)
+    debug_print(triggered_id)
     if triggered_id == 'confirm-select':
         # {'background-color': '#d62d20'}
         return {'background-color': '#fa3c4c'}
@@ -298,13 +308,17 @@ def autobots_roll_out(refresh_clicks, confirm_clicks, color):
     Output('schema-preview', 'children'),
     Output('schema-input-form', 'children'),
     Output('open-schema', 'data'),
+    Input('collection-select', 'options'),
     Input('collection-select', 'value'),
 )
-def preview_schema(c_name):
+def preview_schema(c_options, c_name):
+    debug_print('c_options\n' + str(c_options))
+    if c_name not in c_options:
+        return generate_schema_preview(), 'placeholder', None
     try:
         with requests.get(schema_link+'/'+str(c_name)+'.schema.json') as response:
             if response.ok:
-                r.set(c_name, response.content.decode())
+                # r.set(c_name, response.content.decode())
                 schema = json.loads(response.content)
                 print('\'Click\'')
                 print(json.dumps(schema, indent=4))
@@ -315,20 +329,6 @@ def preview_schema(c_name):
                 return generate_schema_preview(), 'placeholder', None
     except:
         return generate_schema_preview(), 'placeholder', None
-
-# @app.callback(
-#     Output('schema-input-form', 'children'),
-#     # Input('collection-select', 'value'),
-#     Input('schema-inputs', 'data'),
-# )
-# def modify_schema(c_name):
-#     # open_schema = r.get('open-schema')
-#     open_schema = c_name
-#     if open_schema is None:
-#         return 'placeholder'
-#     else:
-#         schema = json.loads(open_schema)
-#         return generate_input_components(schema['properties'])
 
 
 if __name__ == '__main__':
