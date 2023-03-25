@@ -85,7 +85,7 @@ CELLO-3.0 was developed by Weiqi Ji and [other contributors]() at [CIDAR LAB](ht
 
 CELLO-3.0 is released under the [license name] license. See the LICENSE file for more information.
 
-### Troubleshoot:
+## Troubleshoot:
 
 If You get the error that port 8050 is already running, you can try to shut it down this way:
 
