@@ -84,3 +84,28 @@ CELLO-3.0 was developed by Weiqi Ji and [other contributors]() at [CIDAR LAB](ht
 ## License
 
 CELLO-3.0 is released under the [license name] license. See the LICENSE file for more information.
+
+### Troubleshoot:
+
+If You get the error that port 8050 is already running, you can try to shut it down this way:
+
+```
+redis-cli shutdown
+```
+(Ignore if it takes forever, use 'ctrl+c')
+
+```
+lsof -i :8050
+```
+
+This will show you as list of PIDs running on port 8050
+
+```
+kill PID
+```
+(use the PIDs that listed from the last step, repeat if needed)
+
+**Now, you are able to restart Cello again!**
+
+If that doesn't work, just restart your computer, all your cache will be reset this way.
+
