@@ -178,16 +178,38 @@ app.layout = html.Div(
                     }
                 ),
                 html.Br(),
+            ],
+            style={
+                'text-align': 'center',
+            }
+        ),
+
+        html.Div(
+            children=[
                 html.Div(
                     id='schema-preview',
                     style={
-                        'padding-left': '100px',
-                        'padding-right': '100px'
+                        'flex':0.5,
+                        'max-width': '50%',
+                    }
+                ),
+                html.Div(style={'flex': 0.01}),
+                html.Div(
+                    id='schema-preview-2',
+                    children=[
+                        generate_schema_preview()
+                    ],
+                    style={
+                        'flex':0.5
                     }
                 ),
             ],
             style={
-                'text-align': 'center',
+                'display': 'flex',
+                'flex-direction': 'row',
+                'alignItems': 'center',
+                'padding-left': '100px',
+                'padding-right': '100px'
             }
         ),
 
@@ -333,27 +355,40 @@ def autobots_roll_out(refresh_clicks, confirm_clicks, color):
     Output('schema-preview', 'children'),
     Output('schema-input-form', 'children'),
     Output('open-schema', 'data'),
+    Output('schema-preview-2','children'),
     Input('collection-select', 'options'),
     Input('collection-select', 'value'),
 )
 def preview_schema(c_options, c_name):
     debug_print('c_options\n' + str(c_options))
+    schema1 = generate_schema_preview()
+    inputForm = 'placeholder'
+    schemaData = None
+    schema2 = generate_schema_preview()
     if c_name not in c_options:
-        return generate_schema_preview(), 'placeholder', None
+        return schema1, inputForm, schemaData, schema2
     try:
         with requests.get(schema_link+'/'+str(c_name)+'.schema.json') as response:
             if response.ok:
                 # r.set(c_name, response.content.decode())
-                schema = json.loads(response.content)
+                schemaData = json.loads(response.content)
                 print('\'Click\'')
-                print(json.dumps(schema, indent=4))
-                return generate_schema_preview(schema), generate_input_components(schema['properties']), schema
+                print(json.dumps(schemaData, indent=4))
+                schema1 = generate_schema_preview(schemaData)
+                inputForm = generate_input_components(schemaData['properties'])
             else:
+                debug_print('Could not complete response to retrieve schema')
                 debug_print(str(response.status_code))
-                debug_print('empty schema preview')
-                return generate_schema_preview(), 'placeholder', None
-    except:
-        return generate_schema_preview(), 'placeholder', None
+    except Exception as e:
+        debug_print('Exception with completing response')
+        debug_print(str(e))
+    try:
+        collection_list = find_collection_in_ucf(c_name, json.loads(r.get("ucf")))
+        schema2 = generate_schema_preview(collection_list)
+    except Exception as e:
+        debug_print('Exception finding collection name in UCF file')
+        debug_print(str(e))
+    return schema1, inputForm, schemaData, schema2
 
 
 if __name__ == '__main__':

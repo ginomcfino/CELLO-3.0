@@ -79,7 +79,7 @@ def generate_schema_preview(schema=None):
         return html.Div(
             'select a collection name to preview',
             style={
-                'height': '300px',
+                'height': '500px',
                 'overflow': 'auto',
                 'white-space': 'nowrap',
                 'background-color': 'rgba(128, 128, 128, 0.1)',
@@ -89,17 +89,22 @@ def generate_schema_preview(schema=None):
             }
         )
     else:
-        debug_print('loading schema')
         return html.Div(
             html.Pre(json.dumps(schema, indent=4)),
             style={
-                'min-height': '300px',
+                'height': '500px',
                 'overflow': 'auto',
-                'white-space': 'nowrap',
                 'background-color': 'rgba(128, 128, 128, 0.1)',
                 'text-align': 'left'
             }
         )
+        
+def find_collection_in_ucf(c_name, ucf):
+    output = []
+    for c in ucf:
+        if c['collection'] == c_name:
+            output.append(c)
+    return output
     
 def generate_input_components(data, level=0):
     input_components = []
