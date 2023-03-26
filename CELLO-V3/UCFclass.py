@@ -38,9 +38,11 @@ class UCF:
         return params
 
     def query_top_level_collection(self, ucf, cName):
+        matches = []
         for c in ucf:
             if c['collection'] == cName:
-                return c
+                matches.append(c)
+        return matches
 
 # testing the class
 ucf_path = '../../IO/inputs'
