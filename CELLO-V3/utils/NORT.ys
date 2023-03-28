@@ -1,7 +1,0 @@
-hierarchy -check
-proc
-techmap
-opt
-abc -g NOR
-opt
-clean

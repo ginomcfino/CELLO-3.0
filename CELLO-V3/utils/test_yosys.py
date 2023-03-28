@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(0, '../')  # Add parent directory to Python path
 from logic_synthesis import *
+import time
 
 # define path to folder containing verilogs
 verilog_path = '../../../IO/inputs'
@@ -17,16 +18,24 @@ def find_verilogs(v_path):
         prefix = ''
         if root != v_path:
             prefix = root.split('/')[-1] + '/'
-        for file in files:
-            if file.endswith('.v'):
-                verilogs.append(prefix+file)
+        for filename in files:
+            if filename.endswith('.v'):
+                vrlg = filename.split('.')[0]
+                vloc = prefix + vrlg
+                verilogs.append(vloc)
+                # verilogs.append(prefix+file)
     return verilogs
 
 verilogs_to_test = find_verilogs(verilog_path)
 print(verilogs_to_test)
 
+failed_verilogs = []
 for verilog in verilogs_to_test:
     try:
-        make_RG(verilog_path, out_path, verilog, 2)
+        call_YOSYS(verilog_path, out_path, verilog, 1)
     except Exception as e:
         print('ERROR:\n' + str(e))
+        failed_verilogs += [verilog]
+        time.sleep(2)
+print('NUMBER OF ERRORS: ' + str(len(failed_verilogs)))
+print('FAILED Verilogs: ' + str(failed_verilogs))
