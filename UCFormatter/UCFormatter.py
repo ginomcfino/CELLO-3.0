@@ -227,17 +227,17 @@ app.layout = html.Div(
         html.Div(
             children=[
                 html.H5('Modified Preview: '),
-                dcc.RangeSlider(
-                    id='ucf-range-slider-2',
-                    min=0,
-                    max=30,
-                    step=1,
-                    value=[0, 10],
-                    pushable=10,
-                    drag_value=[1],
-                    marks=None,
-                    tooltip={'placement': 'bottom'},
-                ),
+                # dcc.RangeSlider(
+                #     id='ucf-range-slider-2',
+                #     min=0,
+                #     max=30,
+                #     step=1,
+                #     value=[0, 10],
+                #     pushable=10,
+                #     drag_value=[1],
+                #     marks=None,
+                #     tooltip={'placement': 'bottom'},
+                # ),
                 html.Div(
                     children=generate_ucf_preview(),
                     id='ucf-preview-2',

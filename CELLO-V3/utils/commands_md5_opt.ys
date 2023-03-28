@@ -1,0 +1,9 @@
+splitnets
+hierarchy -top md5Core; flatten
+proc; opt -full; memory; opt -full; fsm; opt -full 
+techmap; opt -full
+abc -g NOR
+splitnets -ports; opt -full
+opt_clean
+clean -purge
+flatten
