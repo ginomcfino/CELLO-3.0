@@ -4,6 +4,7 @@ input: netlist JSON from YOSYS output
 (under development)
 '''
 
+# need to pass in an already initialized netlistJSON
 class Netlist:
     def __init__(self, netlistJSON):
         net_main = netlistJSON['modules']

@@ -32,7 +32,7 @@ print(verilogs_to_test)
 failed_verilogs = []
 for verilog in verilogs_to_test:
     try:
-        call_YOSYS(verilog_path, out_path, verilog, 1)
+        call_YOSYS(verilog_path, out_path, verilog, 0)
     except Exception as e:
         print('ERROR:\n' + str(e))
         failed_verilogs += [verilog]

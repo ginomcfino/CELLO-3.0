@@ -30,7 +30,7 @@ class CELLO3:
         print(self.rgnl.name)
         
     def __load_netlist(self, vname, outpath):
-        netpath = outpath + '/' + vname + '.json'
+        netpath = outpath + '/' + vname + '/' + vname + '.json'
         netfile = open(netpath, 'r')
         netjson = json.load(netfile)
         netlist = Netlist(netjson)
@@ -38,7 +38,7 @@ class CELLO3:
         
         
 if __name__ == '__main__':
-    vname = 'md5Core.v'
+    vname = 'md5Core'
     ucfname = 'Eco1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
