@@ -10,6 +10,14 @@ class UCF:
         self.UCFmain = U
         self.UCFin = I
         self.UCFout = O
+        self.numGates = self.__count_gates(self.UCFmain)
+        
+    def __count_gates(self, mainucf):
+        internal_nodes = 0
+        for c in mainucf:
+            if c['collection'] == 'gates':
+                internal_nodes += 1
+        return internal_nodes
 
     def __parse_helper(self, filepath, name):
         U = os.path.join(filepath, name + '.UCF.json')
@@ -45,7 +53,7 @@ class UCF:
         return matches
 
 # testing the class
-ucf_path = '../../IO/inputs'
-test_ucf = 'Eco1C1G1T1'
-ucf = UCF(ucf_path, test_ucf)
-print(ucf)
+# ucf_path = '../../IO/inputs'
+# test_ucf = 'Eco1C1G1T1'
+# ucf = UCF(ucf_path, test_ucf)
+# print(ucf)

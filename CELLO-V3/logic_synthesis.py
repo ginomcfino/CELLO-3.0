@@ -2,20 +2,23 @@
 import subprocess
 import os
 import datetime
+import utils as util
 
 
 def call_YOSYS(in_path=None, out_path=None, vname=None, choice=0):
-    print(in_path)
-    print(out_path)
-    print(vname)
-    print(choice)
-    print('---')
+    # print('---')
+    # print(in_path)
+    # print(out_path)
+    # print(vname)
+    # print(choice)
+    # print('---')
+    # util.print_centered(['RUNNING LOGIC SYNTHESIS',in_path, out_path, vname, choice])
     try:
         new_out = os.path.join(out_path, vname)
         os.makedirs(new_out)
     except Exception as e:
         print("Error\n" + str(e))
-        return
+        return False
     print(new_out) # new out_path
     if '/' in vname:
         new_in = os.path.join(in_path, '/'.join(vname.split('/')[:-1]))
@@ -41,7 +44,7 @@ def call_YOSYS(in_path=None, out_path=None, vname=None, choice=0):
     v_loc = os.path.join(new_in, verilog)
     if not os.path.isfile(v_loc):
         print(f"ERROR finding {verilog}, please check verilog input.")
-        return
+        return False
 
     # try:
     #     v_path = vname.split('/')
@@ -112,6 +115,9 @@ def call_YOSYS(in_path=None, out_path=None, vname=None, choice=0):
         subprocess.call(command, shell=True)
     except Exception as e:
         print("Error\n" + str(e))
+        return False
+    
+    return True
 
 
 # Example Yosys formatting

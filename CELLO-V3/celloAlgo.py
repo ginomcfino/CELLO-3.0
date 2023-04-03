@@ -1,6 +1,7 @@
-from UCFclass import UCF
-from netlist import Netlist
+from ucf_class import UCF
+from netlist_class import Netlist
 from logic_synthesis import *
+from utils import *
 import networkx as nx
 import json
 
@@ -17,17 +18,15 @@ import json
 # 5. options, optional
 class CELLO3:
     def __init__(self, vname, ucfname, inpath, outpath):
-        call_YOSYS(inpath, outpath, vname, 1)
+        try:
+            call_YOSYS(inpath, outpath, vname, 1)
+        except Exception as e:
+            print(f'YOSYS output for {vname} already exists... skipping')
+            print(e)
+            
         self.ucf = UCF(inpath, ucfname)
-        print(self.ucf.UCFin[0])
-        print(self.ucf.UCFmain[0])
-        print(self.ucf.UCFout[0])
-        self.rgnl = self.__load_netlist(vname, outpath)
-        print(self.rgnl.inputs)
-        print(self.rgnl.outputs)
-        print(self.rgnl.gates)
-        print(self.rgnl.edges)
-        print(self.rgnl.name)
+        print(f'GATES in {ucfname} UCF: {self.ucf.numGates}')
+        self.rnl = self.__load_netlist(vname, outpath)
         
     def __load_netlist(self, vname, outpath):
         netpath = outpath + '/' + vname + '/' + vname + '.json'
@@ -38,8 +37,14 @@ class CELLO3:
         
         
 if __name__ == '__main__':
-    vname = 'md5Core'
+    vname = 'g92_boolean'
     ucfname = 'Eco1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     newCello3Process = CELLO3(vname, ucfname, inpath, outpath)
+    
+    
+# logger.info("\n");
+# logger.info("///////////////////////////////////////////////////////////");
+# logger.info("///////////////   Welcome to Cello   //////////////////////");
+# logger.info("///////////////////////////////////////////////////////////\n");
