@@ -3,6 +3,8 @@ sys.path.insert(0, '../')  # Add parent directory to Python path
 from logic_synthesis import *
 import time
 
+# NOTE: This script batch runs YOSYS to a folder you desire to quickly compare results 
+
 # define path to folder containing verilogs
 verilog_path = '../../../IO/inputs'
 # define path to store YOSYS outputs for Restricted Graph & netlist

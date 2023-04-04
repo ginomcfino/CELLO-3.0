@@ -10,14 +10,20 @@ class UCF:
         self.UCFmain = U
         self.UCFin = I
         self.UCFout = O
-        self.numGates = self.__count_gates(self.UCFmain)
+        self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)}
+        # self.numGates = self.__count_collection('gates')
+        # self.numStructs = self.__count_collection('structures')
+        # self.numModels = self.__count_collection('models')
         
-    def __count_gates(self, mainucf):
+    def __count_collection(self, cName):
         internal_nodes = 0
-        for c in mainucf:
-            if c['collection'] == 'gates':
+        for c in self.UCFmain:
+            if c['collection'] == cName:
                 internal_nodes += 1
         return internal_nodes
+
+    def __collection_names(self, UCFchoice):
+        return list(set([c['collection'] for c in UCFchoice]))
 
     def __parse_helper(self, filepath, name):
         U = os.path.join(filepath, name + '.UCF.json')

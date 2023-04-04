@@ -318,7 +318,7 @@ def update_collections_dropdown(refresh_clicks, confirm_clicks, ucf_name):
             collections = list(set(collections))
             # options = [{'label': c, 'value': c} for c in collections]
             # return options
-            return collections, collections[0]
+            return collections, ' '
         else:
             return ['first, confirm selection'], ''
 
@@ -346,9 +346,9 @@ def autobots_roll_out(refresh_clicks, confirm_clicks, color):
         display = []
         for c in collections:
             display.append(html.Li(c))
-        return {'background-color': '#7ddc1f'}
+        return {'background-color': '#7ddc1f'} # green 
     else:
-        return {'background-color': '#d62d20'}
+        return {'background-color': '#fa3c4c'} # red 
 
 
 @app.callback(
@@ -358,14 +358,16 @@ def autobots_roll_out(refresh_clicks, confirm_clicks, color):
     Output('schema-preview-2','children'),
     Input('collection-select', 'options'),
     Input('collection-select', 'value'),
+    State('refresh-page', 'style'),
 )
-def preview_schema(c_options, c_name):
+def preview_schema(c_options, c_name, confirm_btn_color):
     debug_print('c_options\n' + str(c_options))
     schema1 = generate_schema_preview()
     inputForm = 'placeholder'
     schemaData = None
     schema2 = generate_schema_preview()
-    if c_name not in c_options:
+    print(confirm_btn_color)
+    if c_name not in c_options or confirm_btn_color['background-color'] == '#fa3c4c':
         return schema1, inputForm, schemaData, schema2
     try:
         with requests.get(schema_link+'/'+str(c_name)+'.schema.json') as response:

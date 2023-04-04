@@ -90,3 +90,13 @@ class Netlist:
         for n in edges:
             pass
         return 9
+    
+    def check_gates_valid(self):
+        inputs_valid = True
+        outputs_valid = True
+        for k in self.gates.keys():
+            num_inputs = len(self.gates[k]['inputs'])
+            if num_inputs > 1 : inputs_valid = False
+            num_outputs = len(self.gates[k]['output'])
+            if num_outputs > 1 : outputs_valid = False
+        return (inputs_valid, outputs_valid)
