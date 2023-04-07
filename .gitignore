@@ -5,3 +5,4 @@ venv/
 *.egg-info/
 test/
 __pycache__/
+.vscode/

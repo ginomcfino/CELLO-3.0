@@ -10,6 +10,17 @@ class UCF:
         self.UCFmain = U
         self.UCFin = I
         self.UCFout = O
+        self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)}
+        
+    def __count_collection(self, cName):
+        internal_nodes = 0
+        for c in self.UCFmain:
+            if c['collection'] == cName:
+                internal_nodes += 1
+        return internal_nodes
+
+    def __collection_names(self, UCFchoice):
+        return list(set([c['collection'] for c in UCFchoice]))
 
     def __parse_helper(self, filepath, name):
         U = os.path.join(filepath, name + '.UCF.json')
@@ -38,12 +49,8 @@ class UCF:
         return params
 
     def query_top_level_collection(self, ucf, cName):
+        matches = []
         for c in ucf:
             if c['collection'] == cName:
-                return c
-
-# testing the class
-ucf_path = '../../IO/inputs'
-test_ucf = 'Eco1C1G1T1'
-ucf = UCF(ucf_path, test_ucf)
-print(ucf)
+                matches.append(c)
+        return matches
