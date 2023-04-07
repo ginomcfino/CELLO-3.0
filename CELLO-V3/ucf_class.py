@@ -11,9 +11,6 @@ class UCF:
         self.UCFin = I
         self.UCFout = O
         self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)}
-        # self.numGates = self.__count_collection('gates')
-        # self.numStructs = self.__count_collection('structures')
-        # self.numModels = self.__count_collection('models')
         
     def __count_collection(self, cName):
         internal_nodes = 0
@@ -57,9 +54,3 @@ class UCF:
             if c['collection'] == cName:
                 matches.append(c)
         return matches
-
-# testing the class
-# ucf_path = '../../IO/inputs'
-# test_ucf = 'Eco1C1G1T1'
-# ucf = UCF(ucf_path, test_ucf)
-# print(ucf)
