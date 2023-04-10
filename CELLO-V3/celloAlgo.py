@@ -25,10 +25,11 @@ class CELLO3:
         self.outpath = outpath
         self.vrlgname = vname
         self.ucfname = ucfname
+        print_centered(['CELLO V3', self.vrlgname + ' + ' + self.ucfname], padding=True)
         try:
             call_YOSYS(inpath, outpath, vname, 1)
         except Exception as e:
-            print(f'YOSYS output for {vname} already exists... skipping')
+            debug_print(f'YOSYS output for {vname} already exists... skipping')
             print(e)
         # initialize UCF from file
         self.ucf = UCF(inpath, ucfname)
@@ -42,63 +43,63 @@ class CELLO3:
         netlist = Netlist(netjson)
         return netlist
     
-    def __check_conditions(self):
-        netlist_valid = self.rnl.is_valid_netlist()
-
-
-    # helps you see what's going on
-    def print_initialization(self):
-        print_centered(['CELLO V3', self.vrlgname + ' + ' + self.ucfname], padding=True)
-        print('\nINPUTS:')
+    def check_conditions(self, verbose=True):
+        if verbose: print()
+        if verbose: print_centered('condition checks for valid input')
+        
         num_ucf_input_sensors = len(self.ucf.query_top_level_collection(self.ucf.UCFin, 'input_sensors'))
         num_ucf_input_structures = len(self.ucf.query_top_level_collection(self.ucf.UCFin, 'structures'))
         num_ucf_input_models = len(self.ucf.query_top_level_collection(self.ucf.UCFin, 'models'))
         num_ucf_input_parts = len(self.ucf.query_top_level_collection(self.ucf.UCFin, 'parts'))
-        print(f'num IN-SENSORS in {ucfname} in-UCF: {num_ucf_input_sensors}')
-        print(f'num IN-STRUCTURES in {ucfname} in-UCF: {num_ucf_input_structures}')
-        print(f'num IN-MODELS in {ucfname} in-UCF: {num_ucf_input_models}')
-        print(f'num IN-PARTS in {ucfname} in-UCF: {num_ucf_input_parts}')
-        print(f'num IN-NODES in {vname} netlist: {len(self.rnl.inputs)}')
-        # print(self.rnl.inputs)
-        print(('Valid' if len(self.rnl.inputs) <=
-              num_ucf_input_sensors else 'NOT valid') + ' input match!')
-        print('\nOUTPUTS:')
+        if verbose: print('\nINPUTS:')
+        if verbose: print(f'num IN-SENSORS in {ucfname} in-UCF: {num_ucf_input_sensors}')
+        if verbose: print(f'num IN-STRUCTURES in {ucfname} in-UCF: {num_ucf_input_structures}')
+        if verbose: print(f'num IN-MODELS in {ucfname} in-UCF: {num_ucf_input_models}')
+        if verbose: print(f'num IN-PARTS in {ucfname} in-UCF: {num_ucf_input_parts}')
+        if verbose: print(f'num IN-NODES in {vname} netlist: {len(self.rnl.inputs)}')
+        inputs_match = (num_ucf_input_sensors == num_ucf_input_models == num_ucf_input_structures == num_ucf_input_parts) and (num_ucf_input_parts >= len(self.rnl.inputs))
+        if verbose: print(('Valid' if inputs_match else 'NOT valid') + ' input match!')
+        
         num_ucf_output_sensors = len(self.ucf.query_top_level_collection(self.ucf.UCFout, 'output_devices'))
         num_ucf_output_structures = len(self.ucf.query_top_level_collection(self.ucf.UCFout, 'structures'))
         num_ucf_output_models = len(self.ucf.query_top_level_collection(self.ucf.UCFout, 'models'))
         num_ucf_output_parts = len(self.ucf.query_top_level_collection(self.ucf.UCFout, 'parts'))
-        print(f'num OUT-SENSORS in {ucfname} out-UCF: {num_ucf_output_sensors}')
-        print(f'num OUT-STRUCTURES in {ucfname} out-UCF: {num_ucf_output_structures}')
-        print(f'num OUT-MODELS in {ucfname} out-UCF: {num_ucf_output_models}')
-        print(f'num OUT-PARTS in {ucfname} out-UCF: {num_ucf_output_parts}')
-        print(f'num OUT-NODES in {vname} netlist: {len(self.rnl.outputs)}')
-        # print(self.rnl.outputs)
-        print(('Valid' if len(self.rnl.outputs) <=
-              num_ucf_output_sensors else 'NOT valid') + ' output match!')
-        print('\nGATES:')
+        if verbose: print('\nOUTPUTS:')
+        if verbose: print(f'num OUT-SENSORS in {ucfname} out-UCF: {num_ucf_output_sensors}')
+        if verbose: print(f'num OUT-STRUCTURES in {ucfname} out-UCF: {num_ucf_output_structures}')
+        if verbose: print(f'num OUT-MODELS in {ucfname} out-UCF: {num_ucf_output_models}')
+        if verbose: print(f'num OUT-PARTS in {ucfname} out-UCF: {num_ucf_output_parts}')
+        if verbose: print(f'num OUT-NODES in {vname} netlist: {len(self.rnl.outputs)}')
+        outputs_match = (num_ucf_output_sensors == num_ucf_output_models == num_ucf_output_parts == num_ucf_output_structures) and (num_ucf_output_parts >= len(self.rnl.outputs))
+        if verbose: print(('Valid' if outputs_match else 'NOT valid') + ' output match!')
+        
         numStructs = self.ucf.collection_count['structures']
-        print(f'num STRUCTURES in {ucfname} UCF: {numStructs}')
         numModels = self.ucf.collection_count['gates']
-        print(f'num MODELS in {ucfname} UCF: {numModels}')
         numGates = self.ucf.collection_count['gates']
-        print(f'num GATES in {ucfname} UCF: {numGates}')
-        print(f'num GATES in {vname} netlist: {len(self.rnl.gates)}')
-        print(('Valid' if len(self.rnl.gates) <=
-              numGates else 'NOT valid') + ' intermediate match!')
-        print('\nNetlist Check:')
+        if verbose: print('\nGATES:')
+        if verbose: print(f'num STRUCTURES in {ucfname} UCF: {numStructs}')
+        if verbose: print(f'num MODELS in {ucfname} UCF: {numModels}')
+        if verbose: print(f'num GATES in {ucfname} UCF: {numGates}')
+        if verbose: print(f'num GATES in {vname} netlist: {len(self.rnl.gates)}')
+        gates_match = (numStructs == numModels == numGates) and (numGates >= len(self.rnl.gates))
+        if verbose: print(('Valid' if gates_match else 'NOT valid') + ' intermediate match!\n')
+        
+        if verbose: print('NETLIST:')
         netlist_valid = self.rnl.is_valid_netlist()
-        # netlist_gates = self.rnl.gates
-        # print(json.dumps(netlist_gates, indent=4))
-        # (GinOk, GoutOk) = self.rnl.check_gates_valid()
-        print(netlist_valid)
-        # print(('NO' if (GinOk and GoutOk) else 'CONTAINS') + ' multi-bit gates!')
-        print()
+        if verbose: print(f'isvalid: {netlist_valid}\n')
+        
+        return netlist_valid and inputs_match and outputs_match and gates_match
+        
 
 
 if __name__ == '__main__':
-    vname = 'g77_boolean'
+    vname = 'systolic4b12Diff'
     ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     Cello3Process = CELLO3(vname, ucfname, inpath, outpath)
-    Cello3Process.print_initialization()
+    pass_check = Cello3Process.check_conditions()
+    print(f'check passed or not: {pass_check}')
+    if pass_check:
+        # Cello3Process.evaluate()
+        pass

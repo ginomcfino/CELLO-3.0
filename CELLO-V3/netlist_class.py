@@ -138,9 +138,7 @@ class Netlist:
                 return False
 
             dirctns = gate['port_directions']
-
             ctns = gate['connections']
-
             d_items = dirctns.items()
             c_items = ctns.items()
             if len(d_items) != len(c_items):
@@ -168,5 +166,68 @@ class Netlist:
             if in_count > 2 or out_count > 1:
                 debug_print(f'failed to have less than 2 in and 1 out for gate: \n{node}')
                 return False
+            
+        # check if all ports are used in cells
+        used_ports = set()
+        for _, cell in self.__cells.items():
+            for _, connection in cell['connections'].items():
+                used_ports.update(connection)
+
+        notused_ports = []
+        for _, port in self.__ports.items():
+            port_bit = port['bits'][0]
+            if port_bit not in used_ports:
+                notused_ports.append(port_bit)
+               
+        if len(notused_ports) > 0: 
+            debug_print(f"Ports {notused_ports} not used in any cell (gate).", False)
+            return False
 
         return True
+    
+    # def is_valid_netlist(self):
+        
+    #     # only support one circuit per Vrlg design
+    #     if type(self.__net_main) != dict:
+    #         return False
+        
+    #     # check IO bits (only support single bit ports)
+    #     for port in self.__ports:
+    #         bitarray = self.__ports[port]['bits']
+    #         if len(bitarray) > 1:
+    #             debug_print(f'failed to have single-bit IO in netlist \n{port}')
+    #             return False
+            
+    #     # check each node aka gate (no param / attributes & 1-bit connections)
+    #     for node in self.__cells:
+    #         gate = self.__cells[node]
+
+    #         try:
+    #             gate_type = gate['type'].split('_')[-2]
+    #             if gate_type not in ['NOT', 'NOR']:
+    #                 debug_print(f"unsupported gate type {gate_type}")
+    #                 return False
+    #         except IndexError:
+    #             debug_print(f"malformed gate type {gate['type']}")
+    #             return False
+
+    #         for port in gate['connections']:
+    #             bitarray = gate['connections'][port]
+    #             if len(bitarray) > 1:
+    #                 debug_print(f'failed to have single-bit connections in node \n{node}')
+    #                 return False
+
+    #     # check if all ports are used in cells
+    #     used_ports = set()
+    #     for _, cell in self.__cells.items():
+    #         for _, connection in cell['connections'].items():
+    #             used_ports.update(connection)
+
+    #     for _, port in self.__ports.items():
+    #         port_bit = port['bits'][0]
+    #         if port_bit not in used_ports:
+    #             debug_print(f"Port {port_bit} is not used in any cell")
+    #             return False
+
+    #     return True
+

@@ -12,8 +12,10 @@ def print_centered(text, padding=False):
     print("/" * length)
     if padding: print()
 
-def debug_print(msg):
-    print(f'\nDEBUG: {msg}\n')
+def debug_print(msg, padding=True):
+    out_msg = f'DEBUG: {msg}'
+    if padding: out_msg = '\n' + out_msg + '\n'
+    print(out_msg)
     
 def print_json(chunk):
     print(json.dumps(chunk, indent=10))

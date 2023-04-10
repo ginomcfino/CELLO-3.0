@@ -9,7 +9,7 @@ def call_YOSYS(in_path=None, out_path=None, vname=None, choice=0):
         new_out = os.path.join(out_path, vname)
         os.makedirs(new_out)
     except Exception as e:
-        print("Error\n" + str(e))
+        print(f"YOSYS output for {vname} already exists, please double-check. \n{e}")
         return False
     print(new_out) # new out_path
     if '/' in vname:
@@ -86,7 +86,7 @@ def call_YOSYS(in_path=None, out_path=None, vname=None, choice=0):
         command = f"yosys -p \"{'; '.join(commands)}\""
         subprocess.call(command, shell=True)
     except Exception as e:
-        print("Error\n" + str(e))
+        print(f"Yosys output for {vname} already exists, pleas double-check. \n{e}")
         return False
     
     return True
