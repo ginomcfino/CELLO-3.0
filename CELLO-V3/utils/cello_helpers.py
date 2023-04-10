@@ -1,3 +1,4 @@
+import json
 
 def print_centered(text, padding=False):
     length = 88  # Length of the string of slashes
@@ -10,3 +11,9 @@ def print_centered(text, padding=False):
         print(text.center(length))
     print("/" * length)
     if padding: print()
+
+def debug_print(msg):
+    print(f'\nDEBUG: {msg}\n')
+    
+def print_json(chunk):
+    print(json.dumps(chunk, indent=10))

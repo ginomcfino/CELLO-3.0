@@ -8,7 +8,7 @@ import redis
 import subprocess
 import atexit
 
-from helper import *
+from dash_helpers import *
 
 # Making requests is OK because this is a public repo
 UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/main/UCFormatter/UCFs'
@@ -290,8 +290,11 @@ def preview_ucf(selectedUCF, slider_value, ucf_name, slider_disabled):
                 print(json.dumps(ucf_data[0], indent=4))
                 return False, generate_ucf_preview(ucf_data, slider_value), generate_ucf_preview(ucf_data), slider_value, len(ucf_data)
             else:
+                debug_print(f'failed to retrieve {ucf_name}, error code ' + str(response.status_code))
                 return True, generate_ucf_preview(), generate_ucf_preview(), slider_value, 30
-    except:
+    except Exception as e:
+        debug_print(f'failed to retrieve {ucf_name}, exception: ')
+        debug_print(e)
         return True, generate_ucf_preview(), generate_ucf_preview(), slider_value, 30
 
 

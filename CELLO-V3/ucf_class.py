@@ -35,11 +35,13 @@ class UCF:
         return tuple(out)
 
     def __str__(self):
+        # print only the first indexed enumeration to test seeing
         return json.dumps(self.UCFmain[0], indent=4) + '\n\n'+ \
             json.dumps(self.UCFin[0], indent=4) + '\n\n' + \
             json.dumps(self.UCFout[0], indent=4)
 
     def list_collection_prarmeters(self, cName):
+        # returns the list (set) of parameters found in a collection
         params = []
         for c in self.UCFmain:
             if c['collection'] == cName:
@@ -49,6 +51,7 @@ class UCF:
         return params
 
     def query_top_level_collection(self, ucf, cName):
+        # returns all collections with the of a name from the UCF
         matches = []
         for c in ucf:
             if c['collection'] == cName:
