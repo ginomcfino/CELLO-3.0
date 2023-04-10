@@ -13,10 +13,15 @@ from cello_helpers import *
 
 # CELLO arguments:
 # 1. verilog name
-# 2. ucf name (could be not included)
+# 2. ucf name (could be optional)
 # 3. path-to-verilog-and-ucf
 # 4. path-for-output
 # 5. options (optional)
+
+# NOTE: if verilog has multiple outputs, SC1C1G1T1 is the only UCF with 2 output devices, 
+# therefore so far it is the only one that will work for 2-output circuits
+# TODO: need MORE UCFs
+# NOTE: To fully utilize the algorithm of Cello v3, built to support multi-output circuits, make more UCFs
 
 
 class CELLO3:
@@ -27,7 +32,7 @@ class CELLO3:
         self.ucfname = ucfname
         print_centered(['CELLO V3', self.vrlgname + ' + ' + self.ucfname], padding=True)
         try:
-            call_YOSYS(inpath, outpath, vname, 1)
+            call_YOSYS(inpath, outpath, vname, 1) # yosys command set 1 seems to work best after trial & error
         except Exception as e:
             debug_print(f'YOSYS output for {vname} already exists... skipping')
             print(e)
@@ -76,11 +81,21 @@ class CELLO3:
         numStructs = self.ucf.collection_count['structures']
         numModels = self.ucf.collection_count['gates']
         numGates = self.ucf.collection_count['gates']
+        # numFunctions = len(self.ucf.query_top_level_collection(self.ucf.UCFmain, 'functions'))
         if verbose: print('\nGATES:')
+        # if verbose: print(f'(ref only) num FUNCTIONS in {ucfname} UCF: {numFunctions}')
         if verbose: print(f'num STRUCTURES in {ucfname} UCF: {numStructs}')
         if verbose: print(f'num MODELS in {ucfname} UCF: {numModels}')
         if verbose: print(f'num GATES in {ucfname} UCF: {numGates}')
+        
+        num_gates_availabe = []
+        logic_constraints = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'logic_constraints')
+        for l in logic_constraints:
+            for g in l['available_gates']:
+                num_gates_availabe.append(g['max_instances'])
+        if verbose: print(f'num GATE USES: {num_gates_availabe}')
         if verbose: print(f'num GATES in {vname} netlist: {len(self.rnl.gates)}')
+        
         gates_match = (numStructs == numModels == numGates) and (numGates >= len(self.rnl.gates))
         if verbose: print(('Valid' if gates_match else 'NOT valid') + ' intermediate match!\n')
         
@@ -92,18 +107,29 @@ class CELLO3:
                 
     # NOTE: execution of the CELLO gate assignment simulation & optimization algorithm
     def evaluate(self):
+        print_centered('Beginning GATE ASSIGNMENT', padding=True)
+        # print(json.dumps(self.rnl.gates, indent=4))
+        
         graph = Graph(self.rnl.inputs, self.rnl.outputs, [])
         graph.load_gates(self.rnl.gates)
+        
+        print()
         print(graph)
+        # print()
+        G = graph.to_networkx()
+        visualize_logic_circuit(G, preview=False, outfile=f'{self.outpath}/{self.vrlgname}/techmap_preview.png')
+        # save_circuit_graph(G, f'{self.outpath}/{self.vrlgname}/techmap_preview.png')
         return 0
 
 if __name__ == '__main__':
+    # vname = 'priorityDetector'
     vname = 'priorityDetector'
     ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     Cello3Process = CELLO3(vname, ucfname, inpath, outpath)
-    pass_check = Cello3Process.check_conditions()
+    pass_check = Cello3Process.check_conditions(verbose=True)
     print(f'Condition check passed? {pass_check}\n')
     if pass_check:
         Cello3Process.evaluate()
+        print()

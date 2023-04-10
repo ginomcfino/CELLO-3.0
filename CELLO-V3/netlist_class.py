@@ -17,11 +17,12 @@ class Netlist:
         self.__ports = self.__net_main['ports']
         self.__cells = self.__net_main['cells']
         self.__edges = self.__net_main['netnames']
-        i, o = self.__sort_nodes(self.__ports)
         # important attributes below
-        self.inputs = i
-        self.outputs = o
-        self.gates = self.__sort_gates(self.__cells)
+        if self.is_valid_netlist():
+            i, o = self.__sort_nodes(self.__ports)
+            self.inputs = i
+            self.outputs = o
+            self.gates = self.__sort_gates(self.__cells)
 
     def __sort_nodes(self, ports):
         in_nodes = []
@@ -30,7 +31,10 @@ class Netlist:
             node_name = p
             direction = ports[p]['direction']
             bits = ports[p]['bits']
-            node = (node_name, bits)
+            if len(bits) > 1:
+                debug_print(f'ERROR: too many bits in \n{json.dumps(p, indent=4)}\n')
+            bit = bits[0] # a bit is basically like the ID, only for uniqueness
+            node = (node_name, bit)
             if direction == 'input':
                 in_nodes.append(node)
             elif direction == 'output':
@@ -43,8 +47,8 @@ class Netlist:
         gates = {}
         for c in cells.keys():
             partition = list(c.split('$'))
-            gate_id = partition[-1]
-            gate_type = cells[c]['type']
+            gate_id = partition[-1] # uslesses except for uniqueness
+            gate_type = cells[c]['type'].split('_')[1]
             gate = {gate_id:
                     {
                         'type': gate_type,
@@ -65,7 +69,7 @@ class Netlist:
             gate_inputs = []
             gate_outputs = []
             for c in ctns.keys():
-                c_nodes = ctns[c]
+                c_nodes = ctns[c][0]
                 if c in inputs:
                     gate_inputs.append((c, c_nodes))
                 else:
@@ -179,50 +183,3 @@ class Netlist:
             return False
 
         return True
-    
-    # def is_valid_netlist(self):
-        
-    #     # only support one circuit per Vrlg design
-    #     if type(self.__net_main) != dict:
-    #         return False
-        
-    #     # check IO bits (only support single bit ports)
-    #     for port in self.__ports:
-    #         bitarray = self.__ports[port]['bits']
-    #         if len(bitarray) > 1:
-    #             debug_print(f'failed to have single-bit IO in netlist \n{port}')
-    #             return False
-            
-    #     # check each node aka gate (no param / attributes & 1-bit connections)
-    #     for node in self.__cells:
-    #         gate = self.__cells[node]
-
-    #         try:
-    #             gate_type = gate['type'].split('_')[-2]
-    #             if gate_type not in ['NOT', 'NOR']:
-    #                 debug_print(f"unsupported gate type {gate_type}")
-    #                 return False
-    #         except IndexError:
-    #             debug_print(f"malformed gate type {gate['type']}")
-    #             return False
-
-    #         for port in gate['connections']:
-    #             bitarray = gate['connections'][port]
-    #             if len(bitarray) > 1:
-    #                 debug_print(f'failed to have single-bit connections in node \n{node}')
-    #                 return False
-
-    #     # check if all ports are used in cells
-    #     used_ports = set()
-    #     for _, cell in self.__cells.items():
-    #         for _, connection in cell['connections'].items():
-    #             used_ports.update(connection)
-
-    #     for _, port in self.__ports.items():
-    #         port_bit = port['bits'][0]
-    #         if port_bit not in used_ports:
-    #             debug_print(f"Port {port_bit} is not used in any cell")
-    #             return False
-
-    #     return True
-

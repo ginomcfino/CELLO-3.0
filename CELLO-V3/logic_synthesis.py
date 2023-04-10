@@ -1,7 +1,7 @@
 # Python default libraries
 import subprocess
 import os
-import datetime
+# import datetime
 
 
 def call_YOSYS(in_path=None, out_path=None, vname=None, choice=0):
