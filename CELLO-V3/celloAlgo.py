@@ -89,17 +89,21 @@ class CELLO3:
         if verbose: print(f'isvalid: {netlist_valid}\n')
         
         return netlist_valid and inputs_match and outputs_match and gates_match
-        
-
+                
+    # NOTE: execution of the CELLO gate assignment simulation & optimization algorithm
+    def evaluate(self):
+        graph = Graph(self.rnl.inputs, self.rnl.outputs, [])
+        graph.load_gates(self.rnl.gates)
+        print(graph)
+        return 0
 
 if __name__ == '__main__':
-    vname = 'systolic4b12Diff'
+    vname = 'priorityDetector'
     ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     Cello3Process = CELLO3(vname, ucfname, inpath, outpath)
     pass_check = Cello3Process.check_conditions()
-    print(f'check passed or not: {pass_check}')
+    print(f'Condition check passed? {pass_check}\n')
     if pass_check:
-        # Cello3Process.evaluate()
-        pass
+        Cello3Process.evaluate()

@@ -22,7 +22,6 @@ class Netlist:
         self.inputs = i
         self.outputs = o
         self.gates = self.__sort_gates(self.__cells)
-        self.edges = self.__check_edges(self.__edges)
 
     def __sort_nodes(self, ports):
         in_nodes = []
@@ -92,11 +91,7 @@ class Netlist:
                 f"{len(self.inputs)} inputs,\n"
                 f"{len(self.outputs)} ouputs.")
 
-    def __check_edges(self, edges):
-        for n in edges:
-            pass
-        return 9
-
+    # NOTE: IMPORTANT CELLO FEATURE
     def is_valid_netlist(self):
         
         # only support one circuit per Vrlg design
