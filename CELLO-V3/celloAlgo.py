@@ -27,13 +27,17 @@ from gate_assignment import *
 
 class CELLO3:
     def __init__(self, vname, ucfname, inpath, outpath, options=None):
+        if options is not None:
+            yosys_cmd_choice = options['yosys_choice']
+        else:
+            yosys_cmd_choice = 1
         self.inpath = inpath
         self.outpath = outpath
         self.vrlgname = vname
         self.ucfname = ucfname
         print_centered(['CELLO V3', self.vrlgname + ' + ' + self.ucfname], padding=True)
         try:
-            call_YOSYS(inpath, outpath, vname, 1) # yosys command set 1 seems to work best after trial & error
+            call_YOSYS(inpath, outpath, vname, yosys_cmd_choice) # yosys command set 1 seems to work best after trial & error
         except Exception as e:
             debug_print(f'YOSYS output for {vname} already exists... skipping')
             print(e)
@@ -147,11 +151,11 @@ class CELLO3:
 
 if __name__ == '__main__':
     # vname = 'priorityDetector'
-    vname = 'g92_boolean'
+    vname = 'alu'
     ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
-    Cello3Process = CELLO3(vname, ucfname, inpath, outpath)
+    Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 2})
     pass_check = Cello3Process.check_conditions(verbose=True)
     print(f'Condition check passed? {pass_check}\n')
     if pass_check:

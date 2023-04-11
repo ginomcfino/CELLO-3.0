@@ -1,15 +1,17 @@
 # Python default libraries
 import subprocess
 import os
-# import datetime
+import shutil
 
 
 def call_YOSYS(in_path=None, out_path=None, vname=None, choice=0):
     try:
         new_out = os.path.join(out_path, vname)
+        if os.path.exists(new_out):
+            shutil.rmtree(new_out) # this could be switched out for making a new dir path instead
         os.makedirs(new_out)
     except Exception as e:
-        print(f"YOSYS output for {vname} already exists, please double-check. \n{e}")
+        print(f"YOSYS output folder for {vname} could not be re-initialized, please double-check. \n{e}") 
         return False
     print(new_out) # new out_path
     if '/' in vname:
