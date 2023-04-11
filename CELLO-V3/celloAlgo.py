@@ -5,6 +5,7 @@ from ucf_class import UCF
 import sys
 sys.path.insert(0, 'utils/')  # links the utils folder to the search path
 from cello_helpers import *
+from gate_assignment import *
 
 # first, run Yosys to produce RG
 # second, check that the RG netlist is supported (only NOR + NOT gates, for now)
@@ -46,36 +47,46 @@ class CELLO3:
         netfile = open(netpath, 'r')
         netjson = json.load(netfile)
         netlist = Netlist(netjson)
+        if not netlist.is_valid_netlist():
+            return None
         return netlist
     
     def check_conditions(self, verbose=True):
         if verbose: print()
         if verbose: print_centered('condition checks for valid input')
         
+        if verbose: print('\nNETLIST:')
+        netlist_valid = False
+        if self.rnl is not None:
+            netlist_valid = self.rnl.is_valid_netlist()
+        if verbose: print(f'isvalid: {netlist_valid}')
+
         num_ucf_input_sensors = len(self.ucf.query_top_level_collection(self.ucf.UCFin, 'input_sensors'))
         num_ucf_input_structures = len(self.ucf.query_top_level_collection(self.ucf.UCFin, 'structures'))
         num_ucf_input_models = len(self.ucf.query_top_level_collection(self.ucf.UCFin, 'models'))
         num_ucf_input_parts = len(self.ucf.query_top_level_collection(self.ucf.UCFin, 'parts'))
+        num_netlist_inputs = len(self.rnl.inputs) if netlist_valid else 99999
         if verbose: print('\nINPUTS:')
         if verbose: print(f'num IN-SENSORS in {ucfname} in-UCF: {num_ucf_input_sensors}')
         if verbose: print(f'num IN-STRUCTURES in {ucfname} in-UCF: {num_ucf_input_structures}')
         if verbose: print(f'num IN-MODELS in {ucfname} in-UCF: {num_ucf_input_models}')
         if verbose: print(f'num IN-PARTS in {ucfname} in-UCF: {num_ucf_input_parts}')
-        if verbose: print(f'num IN-NODES in {vname} netlist: {len(self.rnl.inputs)}')
-        inputs_match = (num_ucf_input_sensors == num_ucf_input_models == num_ucf_input_structures == num_ucf_input_parts) and (num_ucf_input_parts >= len(self.rnl.inputs))
+        if verbose: print(f'num IN-NODES in {vname} netlist: {num_netlist_inputs}')
+        inputs_match = (num_ucf_input_sensors == num_ucf_input_models == num_ucf_input_structures == num_ucf_input_parts) and (num_ucf_input_parts >= num_netlist_inputs)
         if verbose: print(('Valid' if inputs_match else 'NOT valid') + ' input match!')
         
         num_ucf_output_sensors = len(self.ucf.query_top_level_collection(self.ucf.UCFout, 'output_devices'))
         num_ucf_output_structures = len(self.ucf.query_top_level_collection(self.ucf.UCFout, 'structures'))
         num_ucf_output_models = len(self.ucf.query_top_level_collection(self.ucf.UCFout, 'models'))
         num_ucf_output_parts = len(self.ucf.query_top_level_collection(self.ucf.UCFout, 'parts'))
+        num_netlist_outputs = len(self.rnl.outputs) if netlist_valid else 99999
         if verbose: print('\nOUTPUTS:')
         if verbose: print(f'num OUT-SENSORS in {ucfname} out-UCF: {num_ucf_output_sensors}')
         if verbose: print(f'num OUT-STRUCTURES in {ucfname} out-UCF: {num_ucf_output_structures}')
         if verbose: print(f'num OUT-MODELS in {ucfname} out-UCF: {num_ucf_output_models}')
         if verbose: print(f'num OUT-PARTS in {ucfname} out-UCF: {num_ucf_output_parts}')
-        if verbose: print(f'num OUT-NODES in {vname} netlist: {len(self.rnl.outputs)}')
-        outputs_match = (num_ucf_output_sensors == num_ucf_output_models == num_ucf_output_parts == num_ucf_output_structures) and (num_ucf_output_parts >= len(self.rnl.outputs))
+        if verbose: print(f'num OUT-NODES in {vname} netlist: {num_netlist_outputs}')
+        outputs_match = (num_ucf_output_sensors == num_ucf_output_models == num_ucf_output_parts == num_ucf_output_structures) and (num_ucf_output_parts >= num_netlist_outputs)
         if verbose: print(('Valid' if outputs_match else 'NOT valid') + ' output match!')
         
         numStructs = self.ucf.collection_count['structures']
@@ -94,14 +105,10 @@ class CELLO3:
             for g in l['available_gates']:
                 num_gates_availabe.append(g['max_instances'])
         if verbose: print(f'num GATE USES: {num_gates_availabe}')
-        if verbose: print(f'num GATES in {vname} netlist: {len(self.rnl.gates)}')
-        
-        gates_match = (numStructs == numModels == numGates) and (numGates >= len(self.rnl.gates))
+        num_netlist_gates = len(self.rnl.gates) if netlist_valid else 99999
+        if verbose: print(f'num GATES in {vname} netlist: {num_netlist_gates}')
+        gates_match = (numStructs == numModels == numGates) and (numGates >= num_netlist_gates)
         if verbose: print(('Valid' if gates_match else 'NOT valid') + ' intermediate match!\n')
-        
-        if verbose: print('NETLIST:')
-        netlist_valid = self.rnl.is_valid_netlist()
-        if verbose: print(f'isvalid: {netlist_valid}\n')
         
         return netlist_valid and inputs_match and outputs_match and gates_match
                 
@@ -110,20 +117,37 @@ class CELLO3:
         print_centered('Beginning GATE ASSIGNMENT', padding=True)
         # print(json.dumps(self.rnl.gates, indent=4))
         
-        graph = Graph(self.rnl.inputs, self.rnl.outputs, [])
-        graph.load_gates(self.rnl.gates)
+        circuit = Graph(self.rnl.inputs, self.rnl.outputs, [])
+        circuit.load_gates(self.rnl.gates)
         
         print()
-        print(graph)
+        print(circuit)
         # print()
-        G = graph.to_networkx()
+        G = circuit.to_networkx()
         visualize_logic_circuit(G, preview=False, outfile=f'{self.outpath}/{self.vrlgname}/techmap_preview.png')
         # save_circuit_graph(G, f'{self.outpath}/{self.vrlgname}/techmap_preview.png')
+        print('\n\n')
+        
+        # TODO: under development - assign gates and optimized
+        debug_print('listing all input_sensor permutations')
+        input_sensor_assignments = circuit.assign_inputs(self.ucf)
+        for g in input_sensor_assignments:
+            print(g)
+        debug_print('listing all gate permutations')
+        new_gate_assignment = circuit.assign_gates(self.ucf)
+        for g in new_gate_assignment:
+            print(str(g))
+        debug_print('listing all output_devicce permutations')
+        output_device_permutations = circuit.assign_outputs(self.ucf)
+        for g in output_device_permutations:
+            print(g)
+        print()
+        # TODO: now try the permutations of gates and try to predict circuit score from assignments 
         return 0
 
 if __name__ == '__main__':
     # vname = 'priorityDetector'
-    vname = 'priorityDetector'
+    vname = 'g92_boolean'
     ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
