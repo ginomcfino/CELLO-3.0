@@ -16,6 +16,11 @@ class Gate:
         if isinstance(other, Gate):
             return self.gate_id < other.gate_id
         return NotImplemented
+    
+    def __eq__(self, other):
+        if isinstance(other, Gate):
+            return (self.inputs == other.inputs) and (self.output == other.output)
+        return NotImplemented
 
 class Graph:
     def __init__(self, inputs, outputs, gates):
@@ -28,9 +33,9 @@ class Graph:
             gate = Gate(gate_id, gate_info["type"], gate_info["inputs"], gate_info["output"])
             self.gates.append(gate)
             
-    def assign_inputs(self, UCFclass: UCF):
+    def assign_inputs(self, UCFobj: UCF):
         # return the different input combo permutations
-        input_sensors = UCFclass.query_top_level_collection(UCFclass.UCFin, 'input_sensors')
+        input_sensors = UCFobj.query_top_level_collection(UCFobj.UCFin, 'input_sensors')
         new_inputs = []
         for (id, edge_no) in self.inputs:
             for sensor in input_sensors:
@@ -38,9 +43,9 @@ class Graph:
                 new_inputs.append((sensor_name, edge_no))
         return new_inputs
     
-    def assign_outputs(self, UCFclass: UCF):
+    def assign_outputs(self, UCFobj: UCF):
         # return the different input combo permutations
-        output_devices = UCFclass.query_top_level_collection(UCFclass.UCFout, 'output_devices')
+        output_devices = UCFobj.query_top_level_collection(UCFobj.UCFout, 'output_devices')
         new_outputs = []
         for (id, edge_no) in self.outputs:
             for device in output_devices:
@@ -48,8 +53,8 @@ class Graph:
                 new_outputs.append((device_name, edge_no))
         return new_outputs        
     
-    def assign_gates(self, UCFclass: UCF):
-        ucf_gates = UCFclass.query_top_level_collection(UCFclass.UCFmain, 'gates')
+    def assign_gates(self, UCFobj: UCF):
+        ucf_gates = UCFobj.query_top_level_collection(UCFobj.UCFmain, 'gates')
         new_gates = []
         for g in self.gates:
             for ug in ucf_gates:
@@ -81,7 +86,7 @@ class Graph:
             
     def __str__(self):
         gates_str = "\n".join(str(gate) for gate in self.gates)
-        return f"Inputs: {self.inputs}, \nOutputs: {self.outputs}\nGates:\n{gates_str}"
+        return f"Inputs: {self.inputs},\n\nOutputs: {self.outputs}\n\nGates:\n{gates_str}"
     
 def visualize_logic_circuit(G, preview=True, outfile=None):
     if not preview: plt.figure()

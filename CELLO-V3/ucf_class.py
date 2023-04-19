@@ -10,7 +10,7 @@ class UCF:
         self.UCFmain = U
         self.UCFin = I
         self.UCFout = O
-        self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)}
+        self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)} # Main UCF collection counts
         
     def __count_collection(self, cName):
         internal_nodes = 0
