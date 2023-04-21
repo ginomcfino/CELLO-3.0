@@ -3,14 +3,19 @@ import matplotlib.pyplot as plt
 from ucf_class import *
 
 class Gate:
+    # NOTE: used to represent a gate in a netlist
     def __init__(self, gate_id, gate_type, inputs, output):
         self.gate_id = gate_id
         self.gate_type = gate_type
         self.inputs = inputs if type(inputs) == list else list(inputs.values()) # each gate can have up to 2 inputs
         self.output = output if type(output) == int else list(output.values())[0] # each gate can have only 1 output
+        self.uid = ','.join(str(i) for i in self.inputs) + '-' + str(self.output)
     
     def __str__(self):
         return f'{self.gate_type} gate {self.gate_id} w/ inputs {self.inputs} and output {self.output}'
+    
+    def __repr__(self):
+        return f'{self.gate_id}'
     
     def __lt__(self, other):
         if isinstance(other, Gate):
@@ -22,7 +27,23 @@ class Gate:
             return (self.inputs == other.inputs) and (self.output == other.output)
         return NotImplemented
 
-class Graph:
+class AssignedGraph:
+    def __init__(self, inputs=[], outputs=[], gates=[]):
+        self.inputs = []
+        self.outputs = []
+        self.gates = []
+        
+    def add_input(self, input):
+        self.inputs.append(input)
+        
+    def add_output(self, output):
+        self.outputs.append(output)
+        
+    def add_gate(self, gate):
+        self.gates.append(gate)
+
+# NOTE: used to initialize all permuations of gate assignments from UCF to netlist
+class GraphParser:
     def __init__(self, inputs, outputs, gates):
         self.inputs = inputs
         self.outputs = outputs
@@ -33,34 +54,39 @@ class Graph:
             gate = Gate(gate_id, gate_info["type"], gate_info["inputs"], gate_info["output"])
             self.gates.append(gate)
             
-    def assign_inputs(self, UCFobj: UCF):
+    def permute_inputs(self, UCFobj: UCF):
         # return the different input combo permutations
         input_sensors = UCFobj.query_top_level_collection(UCFobj.UCFin, 'input_sensors')
         new_inputs = []
-        for (id, edge_no) in self.inputs:
+        for (_, edge_no) in self.inputs:
             for sensor in input_sensors:
                 sensor_name = sensor['name']
                 new_inputs.append((sensor_name, edge_no))
         return new_inputs
     
-    def assign_outputs(self, UCFobj: UCF):
+    def permute_outputs(self, UCFobj: UCF):
         # return the different input combo permutations
         output_devices = UCFobj.query_top_level_collection(UCFobj.UCFout, 'output_devices')
         new_outputs = []
-        for (id, edge_no) in self.outputs:
+        for (_, edge_no) in self.outputs:
             for device in output_devices:
                 device_name = device['name']
                 new_outputs.append((device_name, edge_no))
         return new_outputs        
     
-    def assign_gates(self, UCFobj: UCF):
+    def permute_gates(self, UCFobj: UCF):
         ucf_gates = UCFobj.query_top_level_collection(UCFobj.UCFmain, 'gates')
         new_gates = []
         for g in self.gates:
             for ug in ucf_gates:
                 new_gates.append(Gate(ug['name'], ug['gate_type'], g.inputs, g.output))
-        return new_gates
-            
+        uids = list(set([g.uid for g in new_gates]))
+        # print(uids)
+        gate_dict = {id: [] for id in uids}
+        for g in new_gates:
+            gate_dict[g.uid].append(g)
+        return new_gates, gate_dict
+    
     def traverse_graph(self, start_node):
         # traverse the graph and assign gates to each node
         return 0 #return 0 exit code

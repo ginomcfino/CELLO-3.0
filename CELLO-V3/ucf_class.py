@@ -36,9 +36,11 @@ class UCF:
 
     def __str__(self):
         # print only the first indexed enumeration to test seeing
-        return json.dumps(self.UCFmain[0], indent=4) + '\n\n'+ \
-            json.dumps(self.UCFin[0], indent=4) + '\n\n' + \
-            json.dumps(self.UCFout[0], indent=4)
+        # return json.dumps(self.UCFmain[0], indent=4) + '\n\n'+ \
+        #     json.dumps(self.UCFin[0], indent=4) + '\n\n' + \
+        #     json.dumps(self.UCFout[0], indent=4)
+        # print the name of the UCF only
+        return self.UCFmain[0]['version']
 
     def list_collection_prarmeters(self, cName):
         # returns the list (set) of parameters found in a collection

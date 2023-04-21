@@ -1,5 +1,11 @@
 import json
 
+def permute_count_helper(i_netlist, o_netlist, g_netlist, i_ucf, o_ucf, g_ucf):
+    factorial = lambda n: 1 if n == 0 else n * factorial(n - 1)
+    partial_factorial = lambda n, k: 1 if n <= k else n * partial_factorial(n - 1, k)
+    total_permutations = partial_factorial(i_ucf, i_ucf-i_netlist) * partial_factorial(g_ucf, g_ucf-g_netlist) * partial_factorial(o_ucf, o_ucf-o_netlist)
+    return total_permutations
+
 def print_centered(text, padding=False):
     length = 88  # Length of the string of slashes
     if padding:
