@@ -26,6 +26,21 @@ class Gate:
         if isinstance(other, Gate):
             return (self.inputs == other.inputs) and (self.output == other.output)
         return NotImplemented
+    
+# class Input:
+#     def __init__(self, input):
+#         self.name = input[0]
+#         self.id = input[1]
+        
+#     def __lt__(self, other):
+#         if isinstance(other, Input):
+#             return self.id < other.id
+#         return NotImplemented
+    
+#     def __eq__(self, other):
+#         if isinstance(other, Input):
+#             return self.id == other.id
+#         return NotImplemented
 
 class AssignedGraph:
     def __init__(self, inputs=[], outputs=[], gates=[]):
@@ -41,6 +56,15 @@ class AssignedGraph:
         
     def add_gate(self, gate):
         self.gates.append(gate)
+        
+    def remove_gate(self, gate):
+        self.gates.remove(gate)
+        
+    def remove_input(self, input):
+        self.inputs.remove(input)
+        
+    def remove_output(self, output):
+        self.outputs.remove(output)
 
 # NOTE: used to initialize all permuations of gate assignments from UCF to netlist
 class GraphParser:
