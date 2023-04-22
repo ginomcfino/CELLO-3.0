@@ -77,7 +77,9 @@ class CELLO3:
             
         debug_print('listing all gate permutations')
         new_gate_assignments, gate_dict = circuit.permute_gates(self.ucf) # 
+        gates_for_iter = []
         for g in new_gate_assignments:
+            gates_for_iter.append((f'{g.gate_type} gate {g.gate_id}', g.inputs, g.output))
             print(str(g))
             
         debug_print('listing all output_device permutations')
@@ -87,6 +89,12 @@ class CELLO3:
             
         # TODO: now try the permutations of gates and try to predict circuit score from assignments 
         best_score = self.gate_assignment_algorithm(input_sensor_assignments, output_device_permutations, new_gate_assignments, gate_dict, self.ucf)
+        
+        
+        unique_combinations = generate_combinations(input_sensor_assignments, gates_for_iter, output_device_permutations)
+        debug_print(f'NUM ITERS: {len(unique_combinations)}')
+        # for c in unique_combinations:
+        #     print(c)
         
         print_centered('End of GATE ASSIGNMENT', padding=True)
         return 0
@@ -206,17 +214,16 @@ class CELLO3:
         
         pass_check = netlist_valid and inputs_match and outputs_match and gates_match
         
-        max_iteratons, confirm = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, numGates) if pass_check else None
+        (max_iteratons, confirm) = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, numGates) if pass_check else (None, None)
         if verbose: debug_print(f'#{max_iteratons} possible permutations for {self.vrlgname}.v+{self.ucfname}')
-        if verbose: debug_print(f'#{confirm} ways to assign but we gon go with one.', padding=False)
+        if verbose: debug_print(f'#{confirm} PERMS confirmed.', padding=False)
 
         return pass_check
-            
-
+    
 if __name__ == '__main__':
     # vname = 'priorityDetector'
-    vname = 'and'
-    ucfname = 'Eco1C1G1T1'
+    vname = 'g92_boolean'
+    ucfname = 'Bth1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     
