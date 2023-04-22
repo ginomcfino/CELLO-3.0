@@ -67,9 +67,7 @@ pip install -r req.txt
 ```
 python UCFormatter.py
 ```
-#### Navigate to [localhost:8050](http://127.0.0.1:8050) to see use UCFormatter running!
-
-<br>
+Finally, navigate to [localhost:8050](http://127.0.0.1:8050) to see use UCFormatter running!
 
 ### Troubleshoot:
 
@@ -133,7 +131,7 @@ We welcome contributions from the community! If you'd like to contribute to CELL
 
 ## Credits
 
-CELLO-3.0 was developed by Weiqi Ji and [other contributors]() at [CIDAR LAB](https://www.cidarlab.org) under Douglas Densmore. It was inspired by the original CELLO software package developed by [CIDAR LAB](https://www.cidarlab.org) and [other contributors]().
+CELLO-3.0 was developed by [Weiqi Ji](https://ginomcfino.github.io) and [other contributors]() at [CIDAR LAB](https://www.cidarlab.org) under [Douglas Densmore](https://www.cidarlab.org/doug-densmore). It was inspired by the original CELLO software package developed by [CIDAR LAB](https://www.cidarlab.org) and [other contributors]().
 
 ## License
 
