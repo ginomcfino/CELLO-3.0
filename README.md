@@ -26,7 +26,7 @@ Navigate into the CELLO-V3 folder,
 ```
 cd CELLO-V3/
 ```
-CELLO-V3 takes the following parameters, example:
+CELLO-V3 takes the following parameters, for example:
 ```
 vname = 'g92_boolean'
 ucfname = 'SC1C1G1T1'
