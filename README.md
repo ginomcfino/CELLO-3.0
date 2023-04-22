@@ -94,28 +94,22 @@ Now, you are able to restart Cello again!
 If that doesn't work, just restart your computer, all your cache will be reset this way.
 
 
-
-#
-(Desc below in progress)
 ## Intended Usage
 
 CELLO-3.0 can be used in a variety of ways, depending on your needs:
 
-- As a standalone tool: Use the interactive shell interface to design and simulate genetic circuits.
+- As a standalone tool: Use the interactive shell interface to design optimized genetic circuits.
 - As a Python package: Import the core CELLO code as a Python library and use it as a component in your own software.
-- As a website: Use the Cello3.0 website, built in Python, to run CELLO-3.0.
 
-CELLO-3.0 includes a proprietary UCF formatter tool that can modify or create UCF files from a website, allowing for intuitive editing of the data inside. Users can also download UCF files from the website.
+CELLO-3.0 also includes a proprietary UCF formatter tool that can modify or create UCF files through an intuitive graphial user interface.
 
 ## Features
 
-* Core cell-logic synthesis process from genetic or logic circuits.
-* Capable of handling both inter-cellular partitioning and intra-cellular partitioning
+* Core cell-logic synthesis process from logic circuits.
+* Optional verbose command-line outputs
+* Visualizes circuit mapping and circuit-flow scores
 * Transform design to SBOL format for universtal transport
 
-## UCF
-
-The Cello software designs the DNA sequences for programmable circuits based on a high-level software description and a library of characterized DNA parts representing Boolean logic gates. The user constraints file (UCF) is a JavaScript Object Notation (JSON) file that describes a part and gate library for a particular organism.
 
 ## Future Work
 
