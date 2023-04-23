@@ -10,7 +10,7 @@ class UCF:
         self.UCFmain = U
         self.UCFin = I
         self.UCFout = O
-        self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)}
+        self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)} # Main UCF collection counts
         
     def __count_collection(self, cName):
         internal_nodes = 0
@@ -35,11 +35,15 @@ class UCF:
         return tuple(out)
 
     def __str__(self):
-        return json.dumps(self.UCFmain[0], indent=4) + '\n\n'+ \
-            json.dumps(self.UCFin[0], indent=4) + '\n\n' + \
-            json.dumps(self.UCFout[0], indent=4)
+        # print only the first indexed enumeration to test seeing
+        # return json.dumps(self.UCFmain[0], indent=4) + '\n\n'+ \
+        #     json.dumps(self.UCFin[0], indent=4) + '\n\n' + \
+        #     json.dumps(self.UCFout[0], indent=4)
+        # print the name of the UCF only
+        return self.UCFmain[0]['version']
 
     def list_collection_prarmeters(self, cName):
+        # returns the list (set) of parameters found in a collection
         params = []
         for c in self.UCFmain:
             if c['collection'] == cName:
@@ -49,6 +53,7 @@ class UCF:
         return params
 
     def query_top_level_collection(self, ucf, cName):
+        # returns all collections with the of a name from the UCF
         matches = []
         for c in ucf:
             if c['collection'] == cName:

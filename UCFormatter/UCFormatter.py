@@ -8,30 +8,25 @@ import redis
 import subprocess
 import atexit
 
-from helper import *
+from dash_helpers import *
 
 # Making requests is OK because this is a public repo
-UCFs_folder = 'https://raw.githubusercontent.com/ginomcfino/CELLO-3.0/main/UCFormatter/UCFs'
+UCFs_folder = 'https://raw.githubusercontent.com/CIDARLAB/Cello-UCF/develop/files/v2'
 schema_link = 'https://raw.githubusercontent.com/CIDARLAB/Cello-UCF/develop/schemas/v2'
 
 # Retrieves ucf-list
-ucf_list = None
-ucf_txt_url = UCFs_folder + '/ucf-list.txt'
+ucf_list = ['empty']
+ucf_txt_path = 'UCFs/ucf-list.txt'
 try:
-    ucf_resp = requests.get(ucf_txt_url)
-    if ucf_resp.ok:
-        file_contents = ucf_resp.content.decode('utf-8')
+    with open(ucf_txt_path, 'r') as f:
+        file_contents = f.read()
         lines = file_contents.split('\n')
         lines = list(filter(lambda x: x != '', lines))
-        # print(lines)
         ucf_list = lines
-    else:
-        print(
-            f"Failed to get file contents. Status code: {ucf_resp.status_code}")
 except Exception as e:
     debug_print(str(e))
-    ucf_list = ['please restart the app once connected to internet']
-
+    ucf_list = ['failed to read ucf-list file'] 
+    
 # set up in-memory caching for variables w redis
 r = redis.Redis(host='localhost', port=6379, db=0)
 
@@ -281,8 +276,19 @@ app.layout = html.Div(
 # NOTE: generate UCF preview and sets slider value
 def preview_ucf(selectedUCF, slider_value, ucf_name, slider_disabled):
     slider_value = slider_helper(slider_value)
+    ucf_path = UCFs_folder + '/'
+    ucf_parse = ucf_name.split('.')
+    ucf_path += ucf_parse[1].lower() + '/'
+    # TODO: method needs update when UCF list expands
+    ucf_pre = ucf_parse[0]
+    group_name = ''
+    if ucf_pre[0] == 'S':
+        group_name = ucf_pre[:2]
+    else:
+        group_name = ucf_pre[:3]
+    ucf_path += group_name
     try:
-        with requests.get(UCFs_folder+'/'+ucf_name) as response:
+        with requests.get(f'{ucf_path}/{ucf_name}') as response:
             if response.ok:
                 ucf_data = json.loads(response.content)
                 r.set('ucf', response.content.decode())
@@ -290,8 +296,12 @@ def preview_ucf(selectedUCF, slider_value, ucf_name, slider_disabled):
                 print(json.dumps(ucf_data[0], indent=4))
                 return False, generate_ucf_preview(ucf_data, slider_value), generate_ucf_preview(ucf_data), slider_value, len(ucf_data)
             else:
+                print(ucf_path)
+                debug_print(f'failed to retrieve {ucf_name}, error code ' + str(response.status_code))
                 return True, generate_ucf_preview(), generate_ucf_preview(), slider_value, 30
-    except:
+    except Exception as e:
+        debug_print(f'failed to retrieve {ucf_name}, exception: ')
+        debug_print(e)
         return True, generate_ucf_preview(), generate_ucf_preview(), slider_value, 30
 
 
