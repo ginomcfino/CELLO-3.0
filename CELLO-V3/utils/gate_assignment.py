@@ -3,9 +3,9 @@
 from ucf_class import *
     
 class Input:
-    def __init__(self, input):
-        self.name = input[0]
-        self.id = input[1]
+    def __init__(self, name, id):
+        self.name = name
+        self.id = id
         
     def __lt__(self, other):
         if isinstance(other, Input):
@@ -18,12 +18,12 @@ class Input:
         return NotImplemented
     
     def __repr__(self):
-        return f'{self.id}'
+        return f'{self.name}'
     
 class Output:
-    def __init__(self, output):
-        self.name = output[0]
-        self.id = output[1]
+    def __init__(self, name, id):
+        self.name = name
+        self.id = id
         
     def __lt__(self, other):
         if isinstance(other, Output):
@@ -36,32 +36,8 @@ class Output:
         return NotImplemented
     
     def __repr__(self):
-        return f'{self.id}'
-
-class AssignGraph:
-    def __init__(self, inputs=[], outputs=[], gates=[]):
-        self.inputs = []
-        self.outputs = []
-        self.gates = []
-        
-    def add_input(self, input):
-        self.inputs.append(input)
-        
-    def add_output(self, output):
-        self.outputs.append(output)
-        
-    def add_gate(self, gate):
-        self.gates.append(gate)
-        
-    def remove_gate(self, gate):
-        self.gates.remove(gate)
-        
-    def remove_input(self, input):
-        self.inputs.remove(input)
-        
-    def remove_output(self, output):
-        self.outputs.remove(output)
-        
+        return f'{self.name}'
+    
 class Gate:
     # NOTE: used to represent a gate in a netlist
     def __init__(self, gate_id, gate_type, inputs, output):
@@ -90,17 +66,58 @@ class Gate:
     def __hash__(self):
         return hash((tuple(self.inputs), self.output))
 
-# NOTE: used to initialize all permuations of gate assignments from UCF to netlist
-class GraphParser:
-    def __init__(self, inputs, outputs, gates):
+class AssignGraph:
+    def __init__(self, inputs=[], outputs=[], gates=[]):
         self.inputs = inputs
         self.outputs = outputs
         self.gates = gates
+        
+    def add_input(self, input):
+        self.inputs.append(input)
+        
+    def add_output(self, output):
+        self.outputs.append(output)
+        
+    def add_gate(self, gate):
+        self.gates.append(gate)
+        
+    def remove_gate(self, gate):
+        self.gates.remove(gate)
+        
+    def remove_input(self, input):
+        self.inputs.remove(input)
+        
+    def remove_output(self, output):
+        self.outputs.remove(output)
+        
+    def __repr__(self):
+        return f"Inputs: {self.inputs}, Outputs: {self.outputs}, Gates: {self.gates}"
+
+# NOTE: used to initialize all permuations of gate assignments from UCF to netlist
+class GraphParser:
+    def __init__(self, inputs, outputs, gates):
+        self.inputs = self.load_inputs(inputs)
+        self.outputs = self.load_outputs(outputs)
+        self.gates = self.load_gates(gates)
+        
+    def load_inputs(self, in_data):
+        inputs = []
+        for (name, id) in in_data:
+            inputs.append(Input(name, id))
+        return inputs
+    
+    def load_outputs(self, out_data):
+        outputs = []
+        for (name, id) in out_data:
+            outputs.append(Output(name, id))
+        return outputs
 
     def load_gates(self, gates_data):
+        gates = []
         for gate_id, gate_info in gates_data.items():
             gate = Gate(gate_id, gate_info["type"], gate_info["inputs"], gate_info["output"])
-            self.gates.append(gate)
+            gates.append(gate)
+        return gates
             
     def permute_inputs(self, UCFobj: UCF):
         # return the different input combo permutations

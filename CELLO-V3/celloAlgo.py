@@ -44,16 +44,12 @@ class CELLO3:
         self.ucf = UCF(inpath, ucfname)
         # initialize RG from netlist JSON output from Yosys
         self.rnl = self.__load_netlist()
-        valid, iter = self.check_conditions(self.verbose)
+        valid, iter = self.check_conditions(verbose=self.verbose)
         if self.verbose: print(f'\nCondition check passed? {valid}\n')
         cont = input('Continue to evaluation? y/n ')
-        if cont == 'Y' or cont == 'y':
-            if valid:
-                if iter is not None:
-                    self.evaluate()
-                else:
-                    # use simulation algorithm
-                    pass
+        if (cont == 'Y' or cont == 'y') and valid:
+                best_result = self.evaluate(iter)
+                debug_print(f'final result: \n{best_result}')
         else:
             print()
         
@@ -69,11 +65,10 @@ class CELLO3:
                 
     # NOTE: POE of the CELLO gate assignment simulation & optimization algorithm
     # TODO: Give it parameter for which evaluative algorithm to use (exhaustive vs simulation)
-    def evaluate(self):
+    def evaluate(self, iter):
         print_centered('Beginning GATE ASSIGNMENT', padding=True)
         
-        circuit = GraphParser(self.rnl.inputs, self.rnl.outputs, [])
-        circuit.load_gates(self.rnl.gates)
+        circuit = GraphParser(self.rnl.inputs, self.rnl.outputs, self.rnl.gates)
         
         debug_print('Netlist de-construction: ')
         print(circuit)
@@ -92,6 +87,7 @@ class CELLO3:
         G_list = []
         for gate in gates:
             # G_list.append((gate['name'], gate['gate_type']))
+            # NOTE: this assumes that all gates in our UCFs are 'NOR' gates
             G_list.append(gate['name'])
         
         debug_print('Listing available parts from UCF: ')
@@ -101,12 +97,17 @@ class CELLO3:
         i = len(self.rnl.inputs)
         o = len(self.rnl.outputs)
         g = len(self.rnl.gates)
+        # NOTE: ^ This is the input to whatever algorithm to use
         
-        debug_print('Running exhaustive gate-assignment algorithm...')
-        bestassignments = self.exhaustive_assign(I_list, O_list, G_list, i, o, g, circuit)
+        bestassignments = []
+        print_centered('Running EXHAUSTIVE gate-assignment algorithm...', padding=True)
+        if iter is not None:
+            bestassignments = self.exhaustive_assign(I_list, O_list, G_list, i, o, g, circuit)
+        else:
+            debug_print('Too many combinations for exhaustive search, ')
         
         print_centered('End of GATE ASSIGNMENT', padding=True)
-        return 0
+        return max(bestassignments)
     
     def exhaustive_assign(self, I_list: list, O_list: list, G_list: list, i: int, o: int, g: int, netgraph: GraphParser):
         count = 0
@@ -124,13 +125,13 @@ class CELLO3:
                         newG = map_helper(G_comb, netgraph.gates)
                         newO = map_helper(O_comb, netgraph.outputs)
                         # print(f"Inputs: {newI}, Gates: {newG}, Outputs: {newO}")
-                        graph = AssignGraph(newI, newG, newO)
+                        graph = AssignGraph(newI, newO, newG)
                         circuit_score = self.eval_assignment(graph)
                         if circuit_score >= bestscore:
                             bestgraphs = [graph]
                         # elif circuit_score == bestscore:
                         #     bestgraphs.append(graph)
-        print(f'\nCOUNT: {count}')
+        print(f'COUNT: {count}')
         return bestgraphs
     
     def eval_assignment(self, graph: AssignGraph):
@@ -199,13 +200,15 @@ class CELLO3:
         
         pass_check = netlist_valid and inputs_match and outputs_match and gates_match
         
-        (max_iteratons, confirm) = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, numGates) if pass_check else (None, None)
-        if verbose: debug_print(f'#{max_iteratons} possible permutations for {self.vrlgname}.v+{self.ucfname}')
+        (max_iterations, confirm) = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, numGates) if pass_check else (None, None)
+        if verbose: debug_print(f'#{max_iterations} possible permutations for {self.vrlgname}.v+{self.ucfname}')
         if verbose: debug_print(f'#{confirm} PERMS confirmed.', padding=False)
         # TODO: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
-        
+        threshold = 1000000
+        if max_iterations > threshold:
+            max_iterations = None
 
-        return pass_check, max_iteratons
+        return pass_check, max_iterations
     
 if __name__ == '__main__':
     # vname = 'priorityDetector'
@@ -218,4 +221,4 @@ if __name__ == '__main__':
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     
-    Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1, 'verbose': False})
+    Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1, 'verbose': True})
