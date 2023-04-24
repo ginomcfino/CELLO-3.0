@@ -24,36 +24,39 @@ from gate_assignment import *
 class CELLO3:
     def __init__(self, vname, ucfname, inpath, outpath, options=None):
         self.verbose = True
+        
         if options is not None:
             yosys_cmd_choice = options['yosys_choice']
             self.verbose = options['verbose']
         else:
             yosys_cmd_choice = 1
+            
         self.inpath = inpath
         self.outpath = outpath
         self.vrlgname = vname
         self.ucfname = ucfname
+        
         print_centered(['CELLO V3', self.vrlgname + ' + ' + self.ucfname], padding=True)
-        try:
-            call_YOSYS(inpath, outpath, vname, yosys_cmd_choice) # yosys command set 1 seems to work best after trial & error
-            print_centered('End of Logic Synthesis', padding=True)
-        except Exception as e:
-            debug_print(f'YOSYS output for {vname} already exists... skipping')
-            print(e)
-        # initialize UCF from file
-        self.ucf = UCF(inpath, ucfname)
+        cont = call_YOSYS(inpath, outpath, vname, yosys_cmd_choice) # yosys command set 1 seems to work best after trial & error
+        print_centered('End of Logic Synthesis', padding=True)
+        if not cont:
+            return # break if run into problem with yosys, call_YOSYS() will show the error.
+        
+        self.ucf = UCF(inpath, ucfname) # initialize UCF from file
         if self.ucf.valid == False:
             return # breaks early if UCF file has errors
-        # initialize RG from netlist JSON output from Yosys
-        self.rnl = self.__load_netlist()
+        
+        self.rnl = self.__load_netlist() # initialize RG from netlist JSON output from Yosys
+        
         valid, iter = self.check_conditions(verbose=self.verbose)
         if self.verbose: print(f'\nCondition check passed? {valid}\n')
+        
         cont = input('Continue to evaluation? y/n ')
         if (cont == 'Y' or cont == 'y') and valid:
-                best_result = self.techmap(iter)
+                best_result = self.techmap(iter) # Executing the algorithm if things check out
                 debug_print(f'final result: \n{best_result}')
         else:
-            print()
+            print() # just to make console look neat
         
         
     def __load_netlist(self):
@@ -110,17 +113,24 @@ class CELLO3:
         # NOTE: ^ This is the input to whatever algorithm to use
         
         bestassignments = []
-        print_centered('Running EXHAUSTIVE gate-assignment algorithm...', padding=True)
         if iter is not None:
             bestassignments = self.exhaustive_assign(I_list, O_list, G_list, i, o, g, circuit)
         else:
-            debug_print('Too many combinations for exhaustive search, using simulation algorithm instead.')
-            bestassignments = [AssignGraph()]
+            # TODO: make the other simulation() functions
+            bestassignments = self.genetic_simulation(I_list, O_list, G_list, i, o, g, circuit)
         
         print_centered('End of GATE ASSIGNMENT', padding=True)
-        return max(bestassignments)
+        return max(bestassignments) if len(bestassignments) > 0 else []
     
+    def genetic_simulation(self, I_list: list, O_list: list, G_list: list, i: int, o: int, g: int, netgraph: GraphParser):
+        # TODO: work on this algorithm
+        print_centered('Running GENETIC SIMULATION gate-assignment algorithm...', padding=True)
+        debug_print('Too many combinations for exhaustive search, using simulation algorithm instead.')
+        bestassignments = [AssignGraph()]
+        return bestassignments
+        
     def exhaustive_assign(self, I_list: list, O_list: list, G_list: list, i: int, o: int, g: int, netgraph: GraphParser):
+        print_centered('Running EXHAUSTIVE gate-assignment algorithm...', padding=True)
         count = 0
         bestgraphs = []
         bestscore = 0
@@ -251,7 +261,7 @@ if __name__ == '__main__':
     vname = 'and'
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
-    ucfname = 'Bth1C1G1T1'
+    ucfname = 'Eco1C1G1T1'
     # vname = 'g92_boolean'
     # ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
