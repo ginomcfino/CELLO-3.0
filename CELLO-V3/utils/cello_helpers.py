@@ -23,36 +23,6 @@ def assign_hash_table_for_every_gate_permu():
 (decided to scrap the hash table)
 '''
 
-# for I_comb in itertools.permutations(I, i):
-#     for O_comb in itertools.permutations(O, o):
-#         for G_comb in itertools.permutations(G, g):
-#             # Check if inputs, outputs, and gates are unique and the correct number
-#             if len(set(I_comb + O_comb + G_comb)) == i+o+g:
-#                 count += 1
-#                 # Output the combination
-#                 print(f"Inputs: {I_comb}, Outputs: {O_comb}, Gates: {G_comb}")
-
-# def is_valid(combination):
-#     names = [node[0] for node in combination]
-#     return len(names) == len(set(names))
-
-# def generate_combinations(inputs, gates, outputs):
-#     all_combinations = []
-
-#     for input1 in inputs:
-#         for input2 in inputs:
-#             if input1[0] == input2[0]:
-#                 continue
-#             for gate1 in gates:
-#                 for gate2 in gates:
-#                     if gate1[0] == gate2[0]:
-#                         continue
-#                     for output in outputs:
-#                         combination = [input1, input2, gate1, gate2, output]
-#                         if is_valid(combination):
-#                             all_combinations.append(combination)
-#     return all_combinations
-
 def permute_count_helper(i_netlist, o_netlist, g_netlist, i_ucf, o_ucf, g_ucf):
     factorial = lambda n: 1 if n == 0 else n * factorial(n - 1)
     partial_factorial = lambda n, k: 1 if n <= k else n * partial_factorial(n - 1, k)

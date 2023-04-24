@@ -1,7 +1,67 @@
-import networkx as nx
-import matplotlib.pyplot as plt
+# import networkx as nx
+# import matplotlib.pyplot as plt
 from ucf_class import *
+    
+class Input:
+    def __init__(self, input):
+        self.name = input[0]
+        self.id = input[1]
+        
+    def __lt__(self, other):
+        if isinstance(other, Input):
+            return self.id < other.id
+        return NotImplemented
+    
+    def __eq__(self, other):
+        if isinstance(other, Input):
+            return self.id == other.id
+        return NotImplemented
+    
+    def __repr__(self):
+        return f'{self.id}'
+    
+class Output:
+    def __init__(self, output):
+        self.name = output[0]
+        self.id = output[1]
+        
+    def __lt__(self, other):
+        if isinstance(other, Output):
+            return self.id < other.id
+        return NotImplemented
+    
+    def __eq__(self, other):
+        if isinstance(other, Output):
+            return self.id == other.id
+        return NotImplemented
+    
+    def __repr__(self):
+        return f'{self.id}'
 
+class AssignGraph:
+    def __init__(self, inputs=[], outputs=[], gates=[]):
+        self.inputs = []
+        self.outputs = []
+        self.gates = []
+        
+    def add_input(self, input):
+        self.inputs.append(input)
+        
+    def add_output(self, output):
+        self.outputs.append(output)
+        
+    def add_gate(self, gate):
+        self.gates.append(gate)
+        
+    def remove_gate(self, gate):
+        self.gates.remove(gate)
+        
+    def remove_input(self, input):
+        self.inputs.remove(input)
+        
+    def remove_output(self, output):
+        self.outputs.remove(output)
+        
 class Gate:
     # NOTE: used to represent a gate in a netlist
     def __init__(self, gate_id, gate_type, inputs, output):
@@ -29,45 +89,6 @@ class Gate:
     
     def __hash__(self):
         return hash((tuple(self.inputs), self.output))
-    
-class Input:
-    def __init__(self, input):
-        self.name = input[0]
-        self.id = input[1]
-        
-    def __lt__(self, other):
-        if isinstance(other, Input):
-            return self.id < other.id
-        return NotImplemented
-    
-    def __eq__(self, other):
-        if isinstance(other, Input):
-            return self.id == other.id
-        return NotImplemented
-
-# class GateAssignment:
-#     def __init__(self, inputs=[], outputs=[], gates=[]):
-#         self.inputs = []
-#         self.outputs = []
-#         self.gates = []
-        
-#     def add_input(self, input):
-#         self.inputs.append(input)
-        
-#     def add_output(self, output):
-#         self.outputs.append(output)
-        
-#     def add_gate(self, gate):
-#         self.gates.append(gate)
-        
-#     def remove_gate(self, gate):
-#         self.gates.remove(gate)
-        
-#     def remove_input(self, input):
-#         self.inputs.remove(input)
-        
-#     def remove_output(self, output):
-#         self.outputs.remove(output)
 
 # NOTE: used to initialize all permuations of gate assignments from UCF to netlist
 class GraphParser:
@@ -118,21 +139,21 @@ class GraphParser:
         # traverse the graph and assign gates to each node
         return 0 #return 0 exit code
     
-    def to_networkx(self):
-        G = nx.DiGraph()
+    # def to_networkx(self):
+    #     G = nx.DiGraph()
 
-        # Add input and output nodes to the graph
-        for (input_node, no) in self.inputs:
-            G.add_node(no, type='input')
+    #     # Add input and output nodes to the graph
+    #     for (input_node, no) in self.inputs:
+    #         G.add_node(no, type='input')
 
-        # Add gate nodes and edges to the graph
-        for gate in self.gates:
-            gate_name = f'{gate.gate_type}{gate.gate_id}'
-            G.add_node(gate_name, type=gate.gate_type)
-            for input_node in gate.inputs:
-                G.add_edge(input_node, gate_name)
-            G.add_node(gate.output, type='output')
-            G.add_edge(gate_name, gate.output)
+    #     # Add gate nodes and edges to the graph
+    #     for gate in self.gates:
+    #         gate_name = f'{gate.gate_type}{gate.gate_id}'
+    #         G.add_node(gate_name, type=gate.gate_type)
+    #         for input_node in gate.inputs:
+    #             G.add_edge(input_node, gate_name)
+    #         G.add_node(gate.output, type='output')
+    #         G.add_edge(gate_name, gate.output)
             
 
         return G
@@ -141,42 +162,42 @@ class GraphParser:
         gates_str = "\n".join(str(gate) for gate in self.gates)
         return f"Inputs: {self.inputs},\n\nOutputs: {self.outputs}\n\nGates:\n{gates_str}"
     
-def visualize_logic_circuit(G, preview=True, outfile=None):
-    if not preview: plt.figure()
-    # Compute the distances from input nodes
-    distances = {input_node: 0 for input_node, data in G.nodes(data=True) if data["type"] == "input"}
+# def visualize_logic_circuit(G, preview=True, outfile=None):
+#     if not preview: plt.figure()
+#     # Compute the distances from input nodes
+#     distances = {input_node: 0 for input_node, data in G.nodes(data=True) if data["type"] == "input"}
 
-    for input_node in list(distances.keys()):
-        for node, distance in nx.single_source_shortest_path_length(G, input_node).items():
-            distances[node] = max(distances.get(node, 0), distance)
+#     for input_node in list(distances.keys()):
+#         for node, distance in nx.single_source_shortest_path_length(G, input_node).items():
+#             distances[node] = max(distances.get(node, 0), distance)
 
-    # Create a custom layout that distributes nodes across layers
-    pos = {}
-    layer_counts = {}
-    for node, distance in distances.items():
-        layer_counts[distance] = layer_counts.get(distance, 0) + 1
-        pos[node] = (distance, -layer_counts[distance])
+#     # Create a custom layout that distributes nodes across layers
+#     pos = {}
+#     layer_counts = {}
+#     for node, distance in distances.items():
+#         layer_counts[distance] = layer_counts.get(distance, 0) + 1
+#         pos[node] = (distance, -layer_counts[distance])
 
-    # Draw the different node types with different colors and shapes
-    input_nodes = [n for n, d in G.nodes(data=True) if d["type"] == "input"]
-    output_nodes = [n for n, d in G.nodes(data=True) if d["type"] == "output"]
-    gate_nodes = [n for n, d in G.nodes(data=True) if d["type"] not in ["input", "output"]]
+#     # Draw the different node types with different colors and shapes
+#     input_nodes = [n for n, d in G.nodes(data=True) if d["type"] == "input"]
+#     output_nodes = [n for n, d in G.nodes(data=True) if d["type"] == "output"]
+#     gate_nodes = [n for n, d in G.nodes(data=True) if d["type"] not in ["input", "output"]]
 
-    nx.draw_networkx_nodes(G, pos, nodelist=input_nodes, node_color="green", node_shape="o")
-    nx.draw_networkx_nodes(G, pos, nodelist=output_nodes, node_color="red", node_shape="o")
-    nx.draw_networkx_nodes(G, pos, nodelist=gate_nodes, node_shape="s")
+#     nx.draw_networkx_nodes(G, pos, nodelist=input_nodes, node_color="green", node_shape="o")
+#     nx.draw_networkx_nodes(G, pos, nodelist=output_nodes, node_color="red", node_shape="o")
+#     nx.draw_networkx_nodes(G, pos, nodelist=gate_nodes, node_shape="s")
 
-    # Draw edges with arrows and labels
-    edge_opts = {
-        "arrowsize": 20,      # Set the size of the arrowhead
-        "arrowstyle": "-|>",  # Set the style of the arrowhead
-    }
-    nx.draw_networkx_edges(G, pos, arrows=True)  # Add 'arrows=True' to draw arrows for the edges
-    nx.draw_networkx_labels(G, pos)
+#     # Draw edges with arrows and labels
+#     edge_opts = {
+#         "arrowsize": 20,      # Set the size of the arrowhead
+#         "arrowstyle": "-|>",  # Set the style of the arrowhead
+#     }
+#     nx.draw_networkx_edges(G, pos, arrows=True)  # Add 'arrows=True' to draw arrows for the edges
+#     nx.draw_networkx_labels(G, pos)
 
-    plt.axis("off")
-    if preview: 
-        plt.show()
-    else:
-        plt.savefig(outfile)
-        plt.close()
+#     plt.axis("off")
+#     if preview: 
+#         plt.show()
+#     else:
+#         plt.savefig(outfile)
+#         plt.close()

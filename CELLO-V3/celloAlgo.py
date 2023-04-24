@@ -64,9 +64,8 @@ class CELLO3:
         
         debug_print('netlist de-construction')
         print(circuit)
-        G = circuit.to_networkx()
-        visualize_logic_circuit(G, preview=False, outfile=f'{self.outpath}/{self.vrlgname}/techmap_preview.png')
-        print()
+        # G = circuit.to_networkx()
+        # visualize_logic_circuit(G, preview=False, outfile=f'{self.outpath}/{self.vrlgname}/techmap_preview.png')
         
         in_sensors = self.ucf.query_top_level_collection(self.ucf.UCFin, 'input_sensors')
         I_list = []
@@ -82,6 +81,7 @@ class CELLO3:
             # G_list.append((gate['name'], gate['gate_type']))
             G_list.append(gate['name'])
         
+        debug_print('possible assignments from UCF')
         print(I_list)
         print(O_list)
         print(G_list)
@@ -89,6 +89,13 @@ class CELLO3:
         o = len(self.rnl.outputs)
         g = len(self.rnl.gates)
         
+        self.assign_gates(I_list, O_list, G_list, i, o, g, circuit)
+        
+        
+        print_centered('End of GATE ASSIGNMENT', padding=True)
+        return 0
+    
+    def assign_gates(self, I_list: list, O_list: list, G_list: list, i: int, o: int, g: int, netgraph: GraphParser):
         count = 0
         for I_comb in itertools.permutations(I_list, i):
             for O_comb in itertools.permutations(O_list, o):
@@ -97,90 +104,18 @@ class CELLO3:
                     if len(set(I_comb + O_comb + G_comb)) == i+o+g:
                         count += 1
                         # Output the combination
-                        # print(f"Inputs: {I_comb}, Outputs: {O_comb}, Gates: {G_comb}")
+                        map_helper = lambda l, c: list(map(lambda x, y: (x, y), l, c))
+                        newI = map_helper(I_comb, netgraph.inputs)
+                        newG = map_helper(G_comb, netgraph.gates)
+                        newO = map_helper(O_comb, netgraph.outputs)
+                        print(f"Inputs: {newI}, Gates: {newG}, Outputs: {newO}")
+                        for newg in newG:
+                            print(newg[1].uid)
+                        # graph = AssignGraph()
         print(f'\nCOUNT: {count}')
-        
-        # TODO: under development - assign gates and optimized
-        # debug_print('listing all input_sensor permutations')
-        # input_sensor_assignments = circuit.permute_inputs(self.ucf) # 
-        # for g in input_sensor_assignments:
-        #     print(g)
-            
-        # debug_print('listing all gate permutations')
-        # new_gate_assignments, gate_dict = circuit.permute_gates(self.ucf) # 
-        # gates_for_iter = []
-        # for g in new_gate_assignments:
-        #     gates_for_iter.append((f'{g.gate_type} gate {g.gate_id}', g.inputs, g.output))
-        #     print(str(g))
-            
-        # debug_print('listing all output_device permutations')
-        # output_device_permutations = circuit.permute_outputs(self.ucf) # 
-        # for g in output_device_permutations:
-        #     print(g)
-            
-        # TODO: now try the permutations of gates and try to predict circuit score from assignments 
-        # best_score = self.gate_assignment_algorithm(input_sensor_assignments, output_device_permutations, new_gate_assignments, gate_dict, self.ucf)
-        
-        # unique_combinations = generate_combinations(input_sensor_assignments, gates_for_iter, output_device_permutations)
-        # debug_print(f'NUM ITERS: {len(unique_combinations)}')
-        # for c in unique_combinations:
-        #     print(c)
-        
-        print_centered('End of GATE ASSIGNMENT', padding=True)
-        return 0
     
-    # def evaluate_assignment(self, i, o, gates, ucf):
-    #     # examples
-    #     # i = ('LacI_sensor', 2)
-    #     # o = ('YFP_reporter', 4)
-    #     # gates = [Gate(class), ...] 
-    #     # ucf = UCF(class)
-    #     scores = []
-    #     return max(scores)
-    
-    # def gate_assignment_algorithm(self, I, O, gates, G, ucf):
-    #     # TODO: refactor code
-    #     I_perm = self.__IO_permu_sorter(I)
-    #     O_perm = self.__IO_permu_sorter(O)
-    #     G_perm = G
-    #     print()
-    #     print(I_perm)
-    #     print(O_perm)
-    #     print(G_perm)
-    #     print()
-    #     # print(gates)
-    #     # print()
-    #     print(ucf)
-    #     print()
-        
-    #     # TODO: keep working here
-    #     i_inUse = None
-    #     o_inUse = None
-    #     g_inUse = None
-    #     count = 0
-    #     cur_assignment = AssignedGraph()
-    #     for i_id, i_sensors in I_perm.items():
-    #         for i_name in i_sensors:
-    #             assign_i = (i_name, i_id)
-                
-    #             for o_id, o_devices in O_perm.items():
-    #                 for o_name in o_devices:
-    #                     assign_o = (o_name, o_id)
-                        
-    #                     # for g in gates:
-    #                     count += 1
-                        
-    #         print(i_id)
-            
-    #     debug_print(f'GateAssignment Iterations: #{count}')
-    #     return -1
-    
-    # def __IO_permu_sorter(self, IO_list):
-    #     ids = list(set([g[1] for g in IO_list]))
-    #     IO_dict = {id: [] for id in ids}
-    #     for g in IO_list:
-    #         IO_dict[g[1]].append(g[0])
-    #     return IO_dict
+    def eval_assignment(self, newI, newG, newO):
+        pass
     
     def check_conditions(self, verbose=True):
         if verbose: print()
@@ -253,10 +188,10 @@ class CELLO3:
     
 if __name__ == '__main__':
     # vname = 'priorityDetector'
-    vname = 'xor'
+    vname = 'and'
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
-    ucfname = 'SC1C1G1T1'
+    ucfname = 'Bth1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     

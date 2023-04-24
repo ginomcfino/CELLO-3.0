@@ -39,6 +39,7 @@ class UCF:
         # return json.dumps(self.UCFmain[0], indent=4) + '\n\n'+ \
         #     json.dumps(self.UCFin[0], indent=4) + '\n\n' + \
         #     json.dumps(self.UCFout[0], indent=4)
+        
         # print the name of the UCF only
         return self.UCFmain[0]['version']
 
