@@ -24,39 +24,32 @@ from gate_assignment import *
 class CELLO3:
     def __init__(self, vname, ucfname, inpath, outpath, options=None):
         self.verbose = True
-        
         if options is not None:
             yosys_cmd_choice = options['yosys_choice']
             self.verbose = options['verbose']
         else:
-            yosys_cmd_choice = 1
-            
+            yosys_cmd_choice = 1  
         self.inpath = inpath
         self.outpath = outpath
         self.vrlgname = vname
         self.ucfname = ucfname
-        
         print_centered(['CELLO V3', self.vrlgname + ' + ' + self.ucfname], padding=True)
         cont = call_YOSYS(inpath, outpath, vname, yosys_cmd_choice) # yosys command set 1 seems to work best after trial & error
         print_centered('End of Logic Synthesis', padding=True)
         if not cont:
             return # break if run into problem with yosys, call_YOSYS() will show the error.
-        
         self.ucf = UCF(inpath, ucfname) # initialize UCF from file
         if self.ucf.valid == False:
             return # breaks early if UCF file has errors
-        
         self.rnl = self.__load_netlist() # initialize RG from netlist JSON output from Yosys
-        
         valid, iter = self.check_conditions(verbose=self.verbose)
         if self.verbose: print(f'\nCondition check passed? {valid}\n')
-        
-        cont = input('Continue to evaluation? y/n ')
-        if (cont == 'Y' or cont == 'y') and valid:
-                best_result = self.techmap(iter) # Executing the algorithm if things check out
-                debug_print(f'final result: \n{best_result}')
-        else:
-            print() # just to make console look neat
+        if valid:
+            cont = input('Continue to evaluation? y/n ')
+            if (cont == 'Y' or cont == 'y') and valid:
+                    best_result = self.techmap(iter) # Executing the algorithm if things check out
+                    debug_print(f'final result: \n{best_result}')
+        return
         
         
     def __load_netlist(self):
@@ -107,8 +100,8 @@ class CELLO3:
         i = len(self.rnl.inputs)
         o = len(self.rnl.outputs)
         g = len(self.rnl.gates)
-        print(f'need {o} outputs')
         print(f'need {i} inputs')
+        print(f'need {o} outputs')
         print(f'need {g} gates')
         # NOTE: ^ This is the input to whatever algorithm to use
         
@@ -120,7 +113,8 @@ class CELLO3:
             bestassignments = self.genetic_simulation(I_list, O_list, G_list, i, o, g, circuit)
         
         print_centered('End of GATE ASSIGNMENT', padding=True)
-        return max(bestassignments) if len(bestassignments) > 0 else []
+        
+        return max(bestassignments) if len(bestassignments) > 0 else bestassignments
     
     def genetic_simulation(self, I_list: list, O_list: list, G_list: list, i: int, o: int, g: int, netgraph: GraphParser):
         # TODO: work on this algorithm
@@ -150,7 +144,7 @@ class CELLO3:
                         newO = [Output(o[0], o[1].id) for o in newO]
                         newG = [Gate(g[0], g[1].gate_type, g[1].inputs, g[1].output) for g in newG]
                         graph = AssignGraph(newI, newO, newG)
-                        circuit_score = self.eval_assignment(graph)
+                        circuit_score = self.score_circuit(graph)
                         if circuit_score >= bestscore:
                             bestgraphs = [graph]
                         # elif circuit_score == bestscore:
@@ -160,7 +154,7 @@ class CELLO3:
     
     # NOTE: this function calculates CIRCUIT SCORE
     # NOTE: modify it if you want circuit score to be caldulated differently
-    def eval_assignment(self, graph: AssignGraph):
+    def score_circuit(self, graph: AssignGraph):
         # NOTE: RETURNS circuit_score
         # NOTE: this is the core mapping from UCF
         
@@ -251,17 +245,17 @@ class CELLO3:
         
         # NOTE: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
         threshold = 1000000
-        if max_iterations > threshold:
+        if max_iterations == None or max_iterations > threshold:
             max_iterations = None
 
         return pass_check, max_iterations
     
 if __name__ == '__main__':
     # vname = 'priorityDetector'
-    vname = 'and'
+    vname = 'chat_3x2'
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
-    ucfname = 'Eco1C1G1T1'
+    ucfname = 'SC1C1G1T1'
     # vname = 'g92_boolean'
     # ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
