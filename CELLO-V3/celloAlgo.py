@@ -16,8 +16,7 @@ from gate_assignment import *
 
 # NOTE: if verilog has multiple outputs, SC1C1G1T1 is the only UCF with 2 output devices, 
 # therefore so far it is the only one that will work for 2-output circuits
-# TODO: need MORE UCFs
-# NOTE: To fully utilize the algorithm of Cello v3, built to support multi-output circuits, make more UCFs
+# TODO: fix the UCFs with syntax errors
 class CELLO3:
     def __init__(self, vname, ucfname, inpath, outpath, options=None):
         if options is not None:
@@ -49,6 +48,7 @@ class CELLO3:
         return netlist
                 
     # NOTE: POE of the CELLO gate assignment simulation & optimization algorithm
+    # TODO: Give it parameter for which evaluative algorithm to use (exhaustive vs simulation)
     def evaluate(self):
         print_centered('Beginning GATE ASSIGNMENT', padding=True)
         # print(json.dumps(self.rnl.gates, indent=4))
@@ -62,7 +62,7 @@ class CELLO3:
         circuit = GraphParser(self.rnl.inputs, self.rnl.outputs, [])
         circuit.load_gates(self.rnl.gates)
         
-        debug_print('netlist de-construction')
+        debug_print('Netlist de-construction: ')
         print(circuit)
         # G = circuit.to_networkx()
         # visualize_logic_circuit(G, preview=False, outfile=f'{self.outpath}/{self.vrlgname}/techmap_preview.png')
@@ -81,7 +81,7 @@ class CELLO3:
             # G_list.append((gate['name'], gate['gate_type']))
             G_list.append(gate['name'])
         
-        debug_print('possible assignments from UCF')
+        debug_print('Listing available parts from UCF: ')
         print(I_list)
         print(O_list)
         print(G_list)
@@ -89,13 +89,13 @@ class CELLO3:
         o = len(self.rnl.outputs)
         g = len(self.rnl.gates)
         
-        self.assign_gates(I_list, O_list, G_list, i, o, g, circuit)
+        self.exhaustive_assign(I_list, O_list, G_list, i, o, g, circuit)
         
         
         print_centered('End of GATE ASSIGNMENT', padding=True)
         return 0
     
-    def assign_gates(self, I_list: list, O_list: list, G_list: list, i: int, o: int, g: int, netgraph: GraphParser):
+    def exhaustive_assign(self, I_list: list, O_list: list, G_list: list, i: int, o: int, g: int, netgraph: GraphParser):
         count = 0
         for I_comb in itertools.permutations(I_list, i):
             for O_comb in itertools.permutations(O_list, o):
@@ -108,9 +108,9 @@ class CELLO3:
                         newI = map_helper(I_comb, netgraph.inputs)
                         newG = map_helper(G_comb, netgraph.gates)
                         newO = map_helper(O_comb, netgraph.outputs)
-                        print(f"Inputs: {newI}, Gates: {newG}, Outputs: {newO}")
-                        for newg in newG:
-                            print(newg[1].uid)
+                        # print(f"Inputs: {newI}, Gates: {newG}, Outputs: {newO}")
+                        # for newg in newG:
+                        #     print(newg[1].uid)
                         # graph = AssignGraph()
         print(f'\nCOUNT: {count}')
     
@@ -183,14 +183,18 @@ class CELLO3:
         (max_iteratons, confirm) = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, numGates) if pass_check else (None, None)
         if verbose: debug_print(f'#{max_iteratons} possible permutations for {self.vrlgname}.v+{self.ucfname}')
         if verbose: debug_print(f'#{confirm} PERMS confirmed.', padding=False)
+        # TODO: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
+        
 
         return pass_check
     
 if __name__ == '__main__':
     # vname = 'priorityDetector'
-    vname = 'and'
+    # vname = 'g77_boolean'
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
+    # ucfname = 'SC1C1G1T1'
+    vname = 'and'
     ucfname = 'Bth1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'

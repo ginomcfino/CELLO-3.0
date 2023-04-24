@@ -6,21 +6,40 @@ import itertools
 cello gate_assignment algorithm pseudo code:
 
 def assign_hash_table_for_every_gate_permu():
-    hash_table = {} #(may reach up to 100mb in memory)
     max_score = 0
     best_design = None
-    for each possibility in (I)P(i) * (O)P(o) * (G)P(g) permutations: (recursion?)
+    (*) for each possibility in (I)P(i) * (O)P(o) * (G)P(g) permutations: (choice in algorithm)
         design = new Circuit(possibility)
-        hash_table[hash(design)] = (False, None) (new init, not yet evaluated)
         circuit_score = evaluate(design)
-        hash_table[hash(design)] = (True, circuit_score)
         if circuit_sccore > max_score:
             max_score = circuit_score
             best_design = design
-    confirm len(hash_table) = (I)P(i) * (O)P(o) * (G)P(g)
-    return max(hash_table), best_design
+    return best_design
+
+(*) def exhaustive_assign:
+    permute available inputs with number of inputs needed
+        permute available outputs with number of outputs needed
+            permute avaialbe gates with the number of gates needed
+                newI, newO, newG = permutation
+time complexity: O((I)P(i) * (O)P(o) * (G)P(g))
+space: O(1) using itertools
     
-(decided to scrap the hash table)
+(*) def genetic_algorithm:
+    population = random circuits
+    fitness_scores = circuit_score(population)
+    convergence_score = int (indicate insignificant change in circuit )
+    While difference > convergence_score (wait for convergence)
+        parents = fittest pair from population
+        baby = new circuit from parents
+        mutation = randomly modify lowest score circuits
+        apply babies and mutation to population
+        new_fitness_scores = circuit_score(population)
+        difference = new_fitness_scores - fitness_scores
+    return best circuit in population
+time complexity: O(g(i+o+g)(I+O+G)), where g = number of generations
+space complexity: O(p) where p = population size
+advantage: random, simulative, able to reach global optimum (not local), time efficient
+disadvantage: sometimes would evaluate the same design again
 '''
 
 def permute_count_helper(i_netlist, o_netlist, g_netlist, i_ucf, o_ucf, g_ucf):
@@ -48,7 +67,7 @@ def print_centered(text, padding=False):
 
 
 def debug_print(msg, padding=True):
-    out_msg = f'DEBUG: {msg}'
+    out_msg = f'∫DEBUG∫ {msg}'
     if padding:
         out_msg = '\n' + out_msg + '\n'
     print(out_msg)
