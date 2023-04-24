@@ -15,6 +15,7 @@ def assign_hash_table_for_every_gate_permu():
             best_design = design
     return best_design
 
+
 (*) def exhaustive_assign:
     permute available inputs with number of inputs needed
         permute available outputs with number of outputs needed
@@ -22,7 +23,8 @@ def assign_hash_table_for_every_gate_permu():
                 newI, newO, newG = permutation
 time complexity: O((I)P(i) * (O)P(o) * (G)P(g))
 space: O(1) using itertools
-    
+
+
 (*) def genetic_algorithm:
     population = random circuits
     fitness_scores = circuit_score(population)
@@ -40,7 +42,14 @@ space complexity: O(p) where p = population size
 advantage: random, simulative, able to reach global optimum (not local), time efficient
 disadvantage: sometimes would evaluate the same design again, still time-consuming with larger solution spaces
 
+
 (*) def simulated_annealing:
+    temperature = some value
+    cur_curcuit = generate random initial solution
+    while True:
+        uses hill-climb
+advantage: less resource-intensive than genetic simulation algorithm
+disadvantage: not guaranteed to reach global optima
 '''
 
 def permute_count_helper(i_netlist, o_netlist, g_netlist, i_ucf, o_ucf, g_ucf):

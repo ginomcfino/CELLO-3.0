@@ -1,5 +1,8 @@
 import os
 import json
+import sys
+sys.path.insert(0, 'utils/')
+from cello_helpers import *
 
 # Work in progress
 
@@ -10,7 +13,11 @@ class UCF:
         self.UCFmain = U
         self.UCFin = I
         self.UCFout = O
-        self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)} # Main UCF collection counts
+        self.valid = True if (self.UCFmain is not None and self.UCFin is not None and self.UCFout is not None) else False
+        if self.valid:
+            self.collection_count = {cName : self.__count_collection(cName) for cName in self.__collection_names(self.UCFmain)} # Main UCF collection counts
+        else:
+            self.collection_count = {'broken UCF': 0}
         
     def __count_collection(self, cName):
         internal_nodes = 0
@@ -30,9 +37,26 @@ class UCF:
         out = []
         for f in paths:
             with open(f, 'r') as ucf:
-                ucf = json.load(ucf)
-                out.append(ucf)
-        return tuple(out)
+                try:
+                    ucf = json.load(ucf)
+                    out.append(ucf)
+                except Exception as e:
+                    debug_print(f'FAILED TO LOAD UCF {name}\nlocated at path: {f}')
+                    debug_print(e, padding=False)
+                    # raise(Exception)
+        if len(out) == 3:
+            return tuple(out)
+        else:
+            if len(out) > 0:
+                debug_print(f'Working UCF files in the {name} collection: ')
+                for o in out:
+                    try:
+                        ucf_name = o[0]['collection']
+                        print(f' - {ucf_name}')
+                    except Exception as e:
+                        debug_print(f'FAILED TO PRINT UCF file\ndump: {o}')
+                print()
+            return (None, None, None)
 
     def __str__(self):
         # print only the first indexed enumeration to test seeing

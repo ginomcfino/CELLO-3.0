@@ -42,13 +42,15 @@ class CELLO3:
             print(e)
         # initialize UCF from file
         self.ucf = UCF(inpath, ucfname)
+        if self.ucf.valid == False:
+            return # breaks early if UCF file has errors
         # initialize RG from netlist JSON output from Yosys
         self.rnl = self.__load_netlist()
         valid, iter = self.check_conditions(verbose=self.verbose)
         if self.verbose: print(f'\nCondition check passed? {valid}\n')
         cont = input('Continue to evaluation? y/n ')
         if (cont == 'Y' or cont == 'y') and valid:
-                best_result = self.evaluate(iter)
+                best_result = self.techmap(iter)
                 debug_print(f'final result: \n{best_result}')
         else:
             print()
@@ -65,13 +67,14 @@ class CELLO3:
                 
     # NOTE: POE of the CELLO gate assignment simulation & optimization algorithm
     # TODO: Give it parameter for which evaluative algorithm to use (exhaustive vs simulation)
-    def evaluate(self, iter):
+    def techmap(self, iter):
         print_centered('Beginning GATE ASSIGNMENT', padding=True)
         
         circuit = GraphParser(self.rnl.inputs, self.rnl.outputs, self.rnl.gates)
         
         debug_print('Netlist de-construction: ')
         print(circuit)
+        # scrapped this because it uses networkx library for visualzations
         # G = circuit.to_networkx()
         # visualize_logic_circuit(G, preview=False, outfile=f'{self.outpath}/{self.vrlgname}/techmap_preview.png')
         
@@ -79,24 +82,31 @@ class CELLO3:
         I_list = []
         for sensor in in_sensors:
             I_list.append(sensor['name'])
+            
         out_devices = self.ucf.query_top_level_collection(self.ucf.UCFout, 'output_devices')
         O_list = []
         for device in out_devices:
             O_list.append(device['name'])
+            
         gates = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'gates')
         G_list = []
         for gate in gates:
             # G_list.append((gate['name'], gate['gate_type']))
-            # NOTE: this assumes that all gates in our UCFs are 'NOR' gates
+            # NOTE: below assumes that all gates in our UCFs are 'NOR' gates
             G_list.append(gate['name'])
         
         debug_print('Listing available parts from UCF: ')
         print(I_list)
         print(O_list)
         print(G_list)
+        
+        debug_print('Netlist requirements: ')
         i = len(self.rnl.inputs)
         o = len(self.rnl.outputs)
         g = len(self.rnl.gates)
+        print(f'need {o} outputs')
+        print(f'need {i} inputs')
+        print(f'need {g} gates')
         # NOTE: ^ This is the input to whatever algorithm to use
         
         bestassignments = []
@@ -104,7 +114,8 @@ class CELLO3:
         if iter is not None:
             bestassignments = self.exhaustive_assign(I_list, O_list, G_list, i, o, g, circuit)
         else:
-            debug_print('Too many combinations for exhaustive search, ')
+            debug_print('Too many combinations for exhaustive search, using simulation algorithm instead.')
+            bestassignments = [AssignGraph()]
         
         print_centered('End of GATE ASSIGNMENT', padding=True)
         return max(bestassignments)
@@ -125,6 +136,9 @@ class CELLO3:
                         newG = map_helper(G_comb, netgraph.gates)
                         newO = map_helper(O_comb, netgraph.outputs)
                         # print(f"Inputs: {newI}, Gates: {newG}, Outputs: {newO}")
+                        newI = [Input(i[0], i[1].id) for i in newI]
+                        newO = [Output(o[0], o[1].id) for o in newO]
+                        newG = [Gate(g[0], g[1].gate_type, g[1].inputs, g[1].output) for g in newG]
                         graph = AssignGraph(newI, newO, newG)
                         circuit_score = self.eval_assignment(graph)
                         if circuit_score >= bestscore:
@@ -134,7 +148,26 @@ class CELLO3:
         print(f'COUNT: {count}')
         return bestgraphs
     
+    # NOTE: this function calculates CIRCUIT SCORE
+    # NOTE: modify it if you want circuit score to be caldulated differently
     def eval_assignment(self, graph: AssignGraph):
+        # NOTE: RETURNS circuit_score
+        # NOTE: this is the core mapping from UCF
+        
+        # for i in graph.inputs:
+        #     print(i)
+        #     # print(type(i[1]))
+        #     # print((i[1].name), i[1].id)
+        # for g in graph.gates:
+        #     print(g)
+        #     # print(type(g[1]))
+        #     # print((g[1].gate_id, g[1].gate_type, g[1].inputs, g[1].output))
+        # for o in graph.outputs:
+        #     print(o)
+        #     # print(type(o[1]))
+        #     # print((o[1].name), o[1].id)
+        # print()
+        
         return 0
     
     def check_conditions(self, verbose=True):
@@ -202,8 +235,11 @@ class CELLO3:
         
         (max_iterations, confirm) = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, numGates) if pass_check else (None, None)
         if verbose: debug_print(f'#{max_iterations} possible permutations for {self.vrlgname}.v+{self.ucfname}')
-        if verbose: debug_print(f'#{confirm} PERMS confirmed.', padding=False)
-        # TODO: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
+        if verbose: debug_print(f'#{confirm} PERMS confirmed.\n', padding=False)
+        
+        if verbose: print_centered('End of condition checks')
+        
+        # NOTE: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
         threshold = 1000000
         if max_iterations > threshold:
             max_iterations = None
@@ -215,9 +251,9 @@ if __name__ == '__main__':
     vname = 'and'
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
-    ucfname = 'Eco1C1G1T1'
-    # vname = 'and'
-    # ucfname = 'Bth1C1G1T1'
+    ucfname = 'Bth1C1G1T1'
+    # vname = 'g92_boolean'
+    # ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     

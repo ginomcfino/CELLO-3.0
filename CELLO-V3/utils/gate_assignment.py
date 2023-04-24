@@ -17,6 +17,9 @@ class Input:
             return self.id == other.id
         return NotImplemented
     
+    def __str__(self):
+        return f'{self.name} input {self.id}'
+    
     def __repr__(self):
         return f'{self.name}'
     
@@ -34,6 +37,9 @@ class Output:
         if isinstance(other, Output):
             return self.id == other.id
         return NotImplemented
+    
+    def __str__(self):
+        return f'{self.name} output {self.id}'
     
     def __repr__(self):
         return f'{self.name}'
