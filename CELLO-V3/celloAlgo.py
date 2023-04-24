@@ -3,9 +3,13 @@ from logic_synthesis import *
 from netlist_class import Netlist
 from ucf_class import UCF
 import sys
+import itertools
 sys.path.insert(0, 'utils/')  # links the utils folder to the search path
 from cello_helpers import *
 from gate_assignment import *
+
+#temp
+# from tqdm import tqdm
 
 # CELLO arguments:
 # 1. verilog name
@@ -19,8 +23,10 @@ from gate_assignment import *
 # TODO: fix the UCFs with syntax errors
 class CELLO3:
     def __init__(self, vname, ucfname, inpath, outpath, options=None):
+        self.verbose = True
         if options is not None:
             yosys_cmd_choice = options['yosys_choice']
+            self.verbose = options['verbose']
         else:
             yosys_cmd_choice = 1
         self.inpath = inpath
@@ -30,6 +36,7 @@ class CELLO3:
         print_centered(['CELLO V3', self.vrlgname + ' + ' + self.ucfname], padding=True)
         try:
             call_YOSYS(inpath, outpath, vname, yosys_cmd_choice) # yosys command set 1 seems to work best after trial & error
+            print_centered('End of Logic Synthesis', padding=True)
         except Exception as e:
             debug_print(f'YOSYS output for {vname} already exists... skipping')
             print(e)
@@ -37,6 +44,19 @@ class CELLO3:
         self.ucf = UCF(inpath, ucfname)
         # initialize RG from netlist JSON output from Yosys
         self.rnl = self.__load_netlist()
+        valid, iter = self.check_conditions(self.verbose)
+        if self.verbose: print(f'\nCondition check passed? {valid}\n')
+        cont = input('Continue to evaluation? y/n ')
+        if cont == 'Y' or cont == 'y':
+            if valid:
+                if iter is not None:
+                    self.evaluate()
+                else:
+                    # use simulation algorithm
+                    pass
+        else:
+            print()
+        
         
     def __load_netlist(self):
         netpath = self.outpath + '/' + self.vrlgname + '/' + self.vrlgname + '.json'
@@ -51,13 +71,6 @@ class CELLO3:
     # TODO: Give it parameter for which evaluative algorithm to use (exhaustive vs simulation)
     def evaluate(self):
         print_centered('Beginning GATE ASSIGNMENT', padding=True)
-        # print(json.dumps(self.rnl.gates, indent=4))
-        
-        # print()
-        # print(self.rnl.inputs)
-        # print(self.rnl.outputs)
-        # print(self.rnl.gates)
-        # print()
         
         circuit = GraphParser(self.rnl.inputs, self.rnl.outputs, [])
         circuit.load_gates(self.rnl.gates)
@@ -89,14 +102,16 @@ class CELLO3:
         o = len(self.rnl.outputs)
         g = len(self.rnl.gates)
         
-        self.exhaustive_assign(I_list, O_list, G_list, i, o, g, circuit)
-        
+        debug_print('Running exhaustive gate-assignment algorithm...')
+        bestassignments = self.exhaustive_assign(I_list, O_list, G_list, i, o, g, circuit)
         
         print_centered('End of GATE ASSIGNMENT', padding=True)
         return 0
     
     def exhaustive_assign(self, I_list: list, O_list: list, G_list: list, i: int, o: int, g: int, netgraph: GraphParser):
         count = 0
+        bestgraphs = []
+        bestscore = 0
         for I_comb in itertools.permutations(I_list, i):
             for O_comb in itertools.permutations(O_list, o):
                 for G_comb in itertools.permutations(G_list, g):
@@ -109,13 +124,17 @@ class CELLO3:
                         newG = map_helper(G_comb, netgraph.gates)
                         newO = map_helper(O_comb, netgraph.outputs)
                         # print(f"Inputs: {newI}, Gates: {newG}, Outputs: {newO}")
-                        # for newg in newG:
-                        #     print(newg[1].uid)
-                        # graph = AssignGraph()
+                        graph = AssignGraph(newI, newG, newO)
+                        circuit_score = self.eval_assignment(graph)
+                        if circuit_score >= bestscore:
+                            bestgraphs = [graph]
+                        # elif circuit_score == bestscore:
+                        #     bestgraphs.append(graph)
         print(f'\nCOUNT: {count}')
+        return bestgraphs
     
-    def eval_assignment(self, newI, newG, newO):
-        pass
+    def eval_assignment(self, graph: AssignGraph):
+        return 0
     
     def check_conditions(self, verbose=True):
         if verbose: print()
@@ -186,23 +205,17 @@ class CELLO3:
         # TODO: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
         
 
-        return pass_check
+        return pass_check, max_iteratons
     
 if __name__ == '__main__':
     # vname = 'priorityDetector'
-    # vname = 'g77_boolean'
+    vname = 'and'
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
-    # ucfname = 'SC1C1G1T1'
-    vname = 'and'
-    ucfname = 'Bth1C1G1T1'
+    ucfname = 'Eco1C1G1T1'
+    # vname = 'and'
+    # ucfname = 'Bth1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     
-    Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1})
-    
-    pass_check = Cello3Process.check_conditions(verbose=True)
-    print(f'\nCondition check passed? {pass_check}\n')
-    
-    if pass_check:
-        Cello3Process.evaluate()
+    Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1, 'verbose': False})

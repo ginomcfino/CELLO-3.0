@@ -1,6 +1,5 @@
 import json
 import math
-import itertools
 
 '''
 cello gate_assignment algorithm pseudo code:
@@ -8,7 +7,7 @@ cello gate_assignment algorithm pseudo code:
 def assign_hash_table_for_every_gate_permu():
     max_score = 0
     best_design = None
-    (*) for each possibility in (I)P(i) * (O)P(o) * (G)P(g) permutations: (choice in algorithm)
+    for each possibility in (I)P(i) * (O)P(o) * (G)P(g) permutations: (* choice in algorithm)
         design = new Circuit(possibility)
         circuit_score = evaluate(design)
         if circuit_sccore > max_score:
@@ -39,7 +38,9 @@ space: O(1) using itertools
 time complexity: O(g(i+o+g)(I+O+G)), where g = number of generations
 space complexity: O(p) where p = population size
 advantage: random, simulative, able to reach global optimum (not local), time efficient
-disadvantage: sometimes would evaluate the same design again
+disadvantage: sometimes would evaluate the same design again, still time-consuming with larger solution spaces
+
+(*) def simulated_annealing:
 '''
 
 def permute_count_helper(i_netlist, o_netlist, g_netlist, i_ucf, o_ucf, g_ucf):
