@@ -61,9 +61,10 @@ class CELLO3:
             return None
         return netlist
                 
-    # NOTE: POE of the CELLO gate assignment simulation & optimization algorithm
-    # TODO: Give it parameter for which evaluative algorithm to use (exhaustive vs simulation)
+                
     def techmap(self, iter):
+        # NOTE: POE of the CELLO gate assignment simulation & optimization algorithm
+        # TODO: Give it parameter for which evaluative algorithm to use (exhaustive vs simulation)
         print_centered('Beginning GATE ASSIGNMENT', padding=True)
         
         circuit = GraphParser(self.rnl.inputs, self.rnl.outputs, self.rnl.gates)
@@ -89,7 +90,8 @@ class CELLO3:
         for gate in gates:
             # G_list.append((gate['name'], gate['gate_type']))
             # NOTE: below assumes that all gates in our UCFs are 'NOR' gates
-            G_list.append(gate['name'])
+            G_list.append(gate['group'])
+        G_list = list(set(G_list))
         
         debug_print('Listing available parts from UCF: ')
         print(I_list)
@@ -140,10 +142,16 @@ class CELLO3:
                         newG = map_helper(G_comb, netgraph.gates)
                         newO = map_helper(O_comb, netgraph.outputs)
                         # print(f"Inputs: {newI}, Gates: {newG}, Outputs: {newO}")
+                        
                         newI = [Input(i[0], i[1].id) for i in newI]
                         newO = [Output(o[0], o[1].id) for o in newO]
                         newG = [Gate(g[0], g[1].gate_type, g[1].inputs, g[1].output) for g in newG]
                         graph = AssignGraph(newI, newO, newG)
+                        
+                        # TODO: Make each gate assign
+                        print(graph)
+                        print(newG)
+                        
                         circuit_score = self.score_circuit(graph)
                         if circuit_score >= bestscore:
                             bestgraphs = [graph]
@@ -157,6 +165,9 @@ class CELLO3:
     def score_circuit(self, graph: AssignGraph):
         # NOTE: RETURNS circuit_score
         # NOTE: this is the core mapping from UCF
+        
+        # NOTE: use one gate from each group only!
+        # NOTE: try every gate from each group (graph.gates.gate_id = group name)
         
         # for i in graph.inputs:
         #     print(i)
@@ -215,10 +226,10 @@ class CELLO3:
         numStructs = self.ucf.collection_count['structures']
         numModels = self.ucf.collection_count['models']
         numGates = self.ucf.collection_count['gates']
-        # numParts = self.ucf.collection_count['parts']
+        numParts = self.ucf.collection_count['parts']
         # numFunctions = len(self.ucf.query_top_level_collection(self.ucf.UCFmain, 'functions'))
         if verbose: print('\nGATES:')
-        # if verbose: print(f'num PARTS in {ucfname} UCF: {numParts}')
+        if verbose: print(f'num PARTS in {ucfname} UCF: {numParts}')
         # if verbose: print(f'(ref only) num FUNCTIONS in {ucfname} UCF: {numFunctions}')
         if verbose: print(f'num STRUCTURES in {ucfname} UCF: {numStructs}')
         if verbose: print(f'num MODELS in {ucfname} UCF: {numModels}')
@@ -239,7 +250,7 @@ class CELLO3:
         
         (max_iterations, confirm) = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, numGates) if pass_check else (None, None)
         if verbose: debug_print(f'#{max_iterations} possible permutations for {self.vrlgname}.v+{self.ucfname}')
-        if verbose: debug_print(f'#{confirm} PERMS confirmed.\n', padding=False)
+        if verbose: debug_print(f'#{confirm} total perms confirmed.\n', padding=False)
         
         if verbose: print_centered('End of condition checks')
         
@@ -263,4 +274,5 @@ if __name__ == '__main__':
     
     Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1, 'verbose': True})
     
-    # it goes: gates -> models -> 
+    # it goes: gates -> models -> structures -> functions -> score -> parts
+    # but what about circuit_rules, device_rules, and motif_library (which I think is useless)

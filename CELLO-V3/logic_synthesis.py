@@ -73,8 +73,14 @@ def call_YOSYS(in_path=None, out_path=None, vname=None, choice=0):
         ],
         [
             # general application Yosys commands
-            'hierarchy -check',
+            'splitnets',
+            'hierarchy -auto-top',
             'proc',
+            'opt',
+            'fsm',
+            'opt',
+            'memory',
+            'opt',
             'techmap',
             'opt',
             'abc -g NOR',
