@@ -149,7 +149,7 @@ class CELLO3:
                             bestgraphs = [graph]
                         # elif circuit_score == bestscore:
                         #     bestgraphs.append(graph)
-        print(f'COUNT: {count}')
+        print(f'COUNT: {count:,} iterations')
         return bestgraphs
     
     # NOTE: this function calculates CIRCUIT SCORE
@@ -244,7 +244,7 @@ class CELLO3:
         if verbose: print_centered('End of condition checks')
         
         # NOTE: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
-        threshold = 1000000
+        threshold = 10000000
         if max_iterations == None or max_iterations > threshold:
             max_iterations = None
 
@@ -252,13 +252,15 @@ class CELLO3:
     
 if __name__ == '__main__':
     # vname = 'priorityDetector'
-    vname = 'chat_3x2'
+    vname = 'and'
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
-    ucfname = 'SC1C1G1T1'
+    ucfname = 'Eco1C1G1T1'
     # vname = 'g92_boolean'
     # ucfname = 'SC1C1G1T1'
     inpath = '../../IO/inputs'
     outpath = '../../IO/celloAlgoTest'
     
     Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1, 'verbose': True})
+    
+    # it goes: gates -> models -> 

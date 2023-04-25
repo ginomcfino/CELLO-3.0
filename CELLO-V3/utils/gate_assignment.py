@@ -2,47 +2,32 @@
 # import matplotlib.pyplot as plt
 from ucf_class import *
     
-class Input:
+class IO:
     def __init__(self, name, id):
         self.name = name
         self.id = id
-        
+
     def __lt__(self, other):
-        if isinstance(other, Input):
+        if isinstance(other, IO):
             return self.id < other.id
         return NotImplemented
-    
+
     def __eq__(self, other):
-        if isinstance(other, Input):
+        if isinstance(other, IO):
             return self.id == other.id
         return NotImplemented
-    
-    def __str__(self):
-        return f'{self.name} input {self.id}'
-    
+
     def __repr__(self):
         return f'{self.name}'
-    
-class Output:
-    def __init__(self, name, id):
-        self.name = name
-        self.id = id
-        
-    def __lt__(self, other):
-        if isinstance(other, Output):
-            return self.id < other.id
-        return NotImplemented
-    
-    def __eq__(self, other):
-        if isinstance(other, Output):
-            return self.id == other.id
-        return NotImplemented
-    
+
+class Input(IO):
+    def __str__(self):
+        return f'{self.name} input {self.id}'
+
+class Output(IO):
     def __str__(self):
         return f'{self.name} output {self.id}'
     
-    def __repr__(self):
-        return f'{self.name}'
     
 class Gate:
     # NOTE: used to represent a gate in a netlist
@@ -162,6 +147,7 @@ class GraphParser:
         # traverse the graph and assign gates to each node
         return 0 #return 0 exit code
     
+    # NOTE: Scrapped for weight-reduction
     # def to_networkx(self):
     #     G = nx.DiGraph()
 
@@ -185,6 +171,7 @@ class GraphParser:
         gates_str = "\n".join(str(gate) for gate in self.gates)
         return f"Inputs: {self.inputs},\n\nOutputs: {self.outputs}\n\nGates:\n{gates_str}"
     
+# NOTE: Scrapped for weight reduction
 # def visualize_logic_circuit(G, preview=True, outfile=None):
 #     if not preview: plt.figure()
 #     # Compute the distances from input nodes
