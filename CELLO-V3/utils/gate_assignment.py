@@ -21,6 +21,13 @@ class IO:
         return f'{self.name}'
 
 class Input(IO):
+    def __init__(self, name, id, function=None, function_parameters=[{}]):
+        super().__init__(name, id)
+        # TODO: implementation-in-progress
+        if function is not None:
+            self.func = function
+            self.fun_params = function_parameters
+    
     def __str__(self):
         return f'{self.name} input {self.id}'
 

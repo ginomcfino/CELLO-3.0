@@ -142,17 +142,14 @@ class CELLO3:
                         newG = map_helper(G_comb, netgraph.gates)
                         newO = map_helper(O_comb, netgraph.outputs)
                         # print(f"Inputs: {newI}, Gates: {newG}, Outputs: {newO}")
-                        
+                        # TODO: Make each gate assign
                         newI = [Input(i[0], i[1].id) for i in newI]
                         newO = [Output(o[0], o[1].id) for o in newO]
                         newG = [Gate(g[0], g[1].gate_type, g[1].inputs, g[1].output) for g in newG]
+                        
                         graph = AssignGraph(newI, newO, newG)
-                        
-                        # TODO: Make each gate assign
-                        print(graph)
-                        print(newG)
-                        
                         circuit_score = self.score_circuit(graph)
+                        
                         if circuit_score >= bestscore:
                             bestgraphs = [graph]
                         # elif circuit_score == bestscore:
@@ -168,6 +165,41 @@ class CELLO3:
         
         # NOTE: use one gate from each group only!
         # NOTE: try every gate from each group (graph.gates.gate_id = group name)
+        print(graph.gates)
+        
+        '''
+        Pseudo code:
+        
+        initialize traversal circuit()
+        
+        for each input:
+            assign input function
+        
+        for each gate(group):
+            find all gates in group
+            for each gate in group:
+                assign response function
+                (basically find all individual gate permutations)
+                
+        for each output:
+            assign output function
+            
+        create truth table of circuit
+        
+        if toxicity & cytometry in all gates:
+            label circuit for extra tox and cyt plot evaluations
+            (maybe ignore this part because they can just look in the UCF instead to find the plots)
+        
+        for each truth table combination:
+            for each individual gate assignment:
+                traverse circuit from inputs (input composition is mostly x1+x2)
+                evaluate output
+
+        '''
+        
+        
+        
+        
         
         # for i in graph.inputs:
         #     print(i)
@@ -227,6 +259,14 @@ class CELLO3:
         numModels = self.ucf.collection_count['models']
         numGates = self.ucf.collection_count['gates']
         numParts = self.ucf.collection_count['parts']
+        ucf_gates = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'gates')
+        G_list = []
+        for gate in ucf_gates:
+            # G_list.append((gate['name'], gate['gate_type']))
+            # NOTE: below assumes that all gates in our UCFs are 'NOR' gates
+            G_list.append(gate['group'])
+        G_list = list(set(G_list))
+        num_groups = len(G_list)
         # numFunctions = len(self.ucf.query_top_level_collection(self.ucf.UCFmain, 'functions'))
         if verbose: print('\nGATES:')
         if verbose: print(f'num PARTS in {ucfname} UCF: {numParts}')
@@ -248,9 +288,9 @@ class CELLO3:
         
         pass_check = netlist_valid and inputs_match and outputs_match and gates_match
         
-        (max_iterations, confirm) = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, numGates) if pass_check else (None, None)
+        (max_iterations, confirm) = permute_count_helper(num_netlist_inputs, num_netlist_outputs, num_netlist_gates, num_ucf_input_sensors, num_ucf_output_sensors, num_groups) if pass_check else (None, None)
         if verbose: debug_print(f'#{max_iterations} possible permutations for {self.vrlgname}.v+{self.ucfname}')
-        if verbose: debug_print(f'#{confirm} total perms confirmed.\n', padding=False)
+        if verbose: debug_print(f'#{confirm} permutations of UCF gate groups confirmed.\n', padding=False)
         
         if verbose: print_centered('End of condition checks')
         
