@@ -93,7 +93,7 @@ class CELLO3:
             G_list.append(gate['group'])
         G_list = list(set(G_list))
         
-        debug_print('Listing available parts from UCF: ')
+        debug_print('Listing available assignments from UCF: ')
         print(I_list)
         print(O_list)
         print(G_list)
@@ -295,7 +295,7 @@ class CELLO3:
         if verbose: print_centered('End of condition checks')
         
         # NOTE: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
-        threshold = 10000000
+        threshold = 1000000
         if max_iterations == None or max_iterations > threshold:
             max_iterations = None
 
@@ -309,8 +309,9 @@ if __name__ == '__main__':
     ucfname = 'Eco1C1G1T1'
     # vname = 'g92_boolean'
     # ucfname = 'SC1C1G1T1'
-    inpath = '../../IO/inputs'
-    outpath = '../../IO/celloAlgoTest'
+    inpath = '../../IO/in_path' # (contiains the verilog files, and UCF files)
+    # TODO: source UCF files from CELLO-UCF instead
+    outpath = '../../IO/out_path' # (any path to a local folder)
     
     Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1, 'verbose': True})
     
