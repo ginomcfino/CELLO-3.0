@@ -85,3 +85,10 @@ def debug_print(msg, padding=True):
 
 def print_json(chunk):
     print(json.dumps(chunk, indent=4))
+    
+def query_helper(dictList, key, vals):
+    out = []
+    for d in dictList:
+        if d[key] in vals:
+            out.append(d)
+    return out

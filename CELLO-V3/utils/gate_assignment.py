@@ -6,7 +6,7 @@ class IO:
     def __init__(self, name, id):
         self.name = name
         self.id = id
-
+        
     def __lt__(self, other):
         if isinstance(other, IO):
             return self.id < other.id
@@ -21,12 +21,13 @@ class IO:
         return f'{self.name}'
 
 class Input(IO):
-    def __init__(self, name, id, function=None, function_parameters=[{}]):
+    def __init__(self, name, id, function=None, params=[], outStruc=''):
         super().__init__(name, id)
         # TODO: implementation-in-progress
         if function is not None:
-            self.func = function
-            self.fun_params = function_parameters
+            self.function = function
+            self.params = params
+            self.outStruc = outStruc
     
     def __str__(self):
         return f'{self.name} input {self.id}'
@@ -38,12 +39,13 @@ class Output(IO):
     
 class Gate:
     # NOTE: used to represent a gate in a netlist
-    def __init__(self, gate_id, gate_type, inputs, output):
+    def __init__(self, gate_id, gate_type, inputs, output, gates=[]):
         self.gate_id = gate_id
         self.gate_type = gate_type
         self.inputs = inputs if type(inputs) == list else list(inputs.values()) # each gate can have up to 2 inputs
         self.output = output if type(output) == int else list(output.values())[0] # each gate can have only 1 output
         self.uid = ','.join(str(i) for i in self.inputs) + '-' + str(self.output)
+        self.gate_ids = gates
     
     def __str__(self):
         return f'{self.gate_type} gate {self.gate_id} w/ inputs {self.inputs} and output {self.output}'

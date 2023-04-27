@@ -130,6 +130,7 @@ class CELLO3:
         count = 0
         bestgraphs = []
         bestscore = 0
+        graph = None
         for I_comb in itertools.permutations(I_list, i):
             for O_comb in itertools.permutations(O_list, o):
                 for G_comb in itertools.permutations(G_list, g):
@@ -148,24 +149,34 @@ class CELLO3:
                         newG = [Gate(g[0], g[1].gate_type, g[1].inputs, g[1].output) for g in newG]
                         
                         graph = AssignGraph(newI, newO, newG)
-                        circuit_score = self.score_circuit(graph)
+                        # circuit_score = self.score_circuit(graph)
                         
-                        if circuit_score >= bestscore:
-                            bestgraphs = [graph]
+                        # if circuit_score >= bestscore:
+                        #     bestgraphs = [graph]
                         # elif circuit_score == bestscore:
                         #     bestgraphs.append(graph)
         print(f'COUNT: {count:,} iterations')
+        
+        
+        # temp
+        circuit_score = self.score_circuit(graph)
+        print(f'circuit score: {circuit_score}')
+        bestgraphs = [graph]       
+        
         return bestgraphs
     
     # NOTE: this function calculates CIRCUIT SCORE
     # NOTE: modify it if you want circuit score to be caldulated differently
     def score_circuit(self, graph: AssignGraph):
+        # NOTE: PLEASE ENSURE ALL FUTURE UCF FILES FOLLOW THE SAME FORAMT AS ORIGINALS
+        # (THAT'S THE ONLY TO GET THIS TO WORK)
+        
         # NOTE: RETURNS circuit_score
         # NOTE: this is the core mapping from UCF
         
         # NOTE: use one gate from each group only!
         # NOTE: try every gate from each group (graph.gates.gate_id = group name)
-        print(graph.gates)
+        # print(graph.gates)
         
         '''
         Pseudo code:
@@ -198,8 +209,41 @@ class CELLO3:
         '''
         
         
+        # First, make sure that all inputs use the same 'sensor_response' function
+        # This has to do with UCF formatting
+        # input_response_functions = [(c['name'], c['functions']['response_function'], c['parameters']) for c in self.ucf.query_top_level_collection(self.ucf.UCFin, 'models')]
+        # print(input_response_functions)
+        # Looks good!
         
         
+        input_function_json = self.ucf.query_top_level_collection(self.ucf.UCFin, 'functions')[0]
+        input_function_str = input_function_json['equation'][1:]
+        input_function_params =[p['name'] for p in input_function_json['parameters']]
+        for p in input_function_params:
+            globals()[p] = 1 # initialize ymax and ymin
+        STATE = 1
+        
+        print()
+        print(f'Input sensor response function: \n{input_function_str} = {eval(input_function_str)}\n')
+        print(f'Parameters in sensor_response function json: \n{input_function_params}')
+        print()
+        
+        input_model_names = [repr(i)+'_model' for i in graph.inputs]
+        input_params = query_helper(self.ucf.query_top_level_collection(self.ucf.UCFin, 'models'), 'name', input_model_names)
+        input_params = [(c['name'][:-6], {p['name']: p['value'] for p in c['parameters']}) for c in input_params]
+        print(f'input paramters:')
+        for p in input_params:
+            print(p)
+        print()
+            
+        gate_groups = [(repr(g), g.gate_type) for g in graph.gates]
+        gates = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'gates')
+        gate_query = query_helper(gates, 'group', [g[0] for g in gate_groups])
+        gate_ids = [(g['group'] ,g['name']) for g in gate_query]
+        
+        print(f'gate mappings: ')
+        for g in gate_ids:
+            print(g)
         
         # for i in graph.inputs:
         #     print(i)
@@ -215,6 +259,7 @@ class CELLO3:
         #     # print((o[1].name), o[1].id)
         # print()
         
+        print()
         return 0
     
     def check_conditions(self, verbose=True):
@@ -302,16 +347,22 @@ class CELLO3:
         return pass_check, max_iterations
     
 if __name__ == '__main__':
-    # vname = 'priorityDetector'
-    vname = 'and'
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
-    ucfname = 'Eco1C1G1T1'
+    
+    # vname = 'priorityDetector'
+    vname = 'and'
     # vname = 'g92_boolean'
+    
+    # ucfname = 'Bth1C1G1T1'
+    ucfname = 'Eco1C1G1T1'
+    # ucfname = 'Eco2C1G3T1'
+    # ucfname = 'Eco2C1G5T1'
     # ucfname = 'SC1C1G1T1'
-    inpath = '../../IO/in_path' # (contiains the verilog files, and UCF files)
+    
     # TODO: source UCF files from CELLO-UCF instead
-    outpath = '../../IO/out_path' # (any path to a local folder)
+    inpath = '../../IO/inputs' # (contiains the verilog files, and UCF files)
+    outpath = '../../IO/celloAlgoTest' # (any path to a local folder)
     
     Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1, 'verbose': True})
     
