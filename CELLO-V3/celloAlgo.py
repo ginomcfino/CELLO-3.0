@@ -150,18 +150,20 @@ class CELLO3:
                         
                         graph = AssignGraph(newI, newO, newG)
                         # circuit_score = self.score_circuit(graph)
-                        
+                        # print(f'circuit score: {circuit_score}')
                         # if circuit_score >= bestscore:
                         #     bestgraphs = [graph]
                         # elif circuit_score == bestscore:
                         #     bestgraphs.append(graph)
+                        
         print(f'COUNT: {count:,} iterations')
         
         
         # temp
         circuit_score = self.score_circuit(graph)
         print(f'circuit score: {circuit_score}')
-        bestgraphs = [graph]       
+        bestgraphs = [graph]   
+        # end temp    
         
         return bestgraphs
     
@@ -217,47 +219,81 @@ class CELLO3:
         
         
         input_function_json = self.ucf.query_top_level_collection(self.ucf.UCFin, 'functions')[0]
-        input_function_str = input_function_json['equation'][1:]
+        input_function_str = input_function_json['equation'][1:] #remove the '$' sign
         input_function_params =[p['name'] for p in input_function_json['parameters']]
         for p in input_function_params:
-            globals()[p] = 1 # initialize ymax and ymin
-        STATE = 1
+            globals()[p] = 1.0 # initialize ymax and ymin
+        STATE = 1.0
         
         print()
-        print(f'Input sensor response function: \n{input_function_str} = {eval(input_function_str)}\n')
-        print(f'Parameters in sensor_response function json: \n{input_function_params}')
-        print()
-        
         input_model_names = [repr(i)+'_model' for i in graph.inputs]
         input_params = query_helper(self.ucf.query_top_level_collection(self.ucf.UCFin, 'models'), 'name', input_model_names)
         input_params = [(c['name'][:-6], {p['name']: p['value'] for p in c['parameters']}) for c in input_params]
-        print(f'input paramters:')
+        print(f'INPUT paramters:')
         for p in input_params:
             print(p)
         print()
+        print(f'Input sensor response function: \n{input_function_str} = {eval(input_function_str)}\n')
+        # print(f'Parameters in sensor_response function json: \n{input_function_params}\n')
             
         gate_groups = [(repr(g), g.gate_type) for g in graph.gates]
         gates = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'gates')
         gate_query = query_helper(gates, 'group', [g[0] for g in gate_groups])
         gate_ids = [(g['group'] ,g['name']) for g in gate_query]
         
-        print(f'gate mappings: ')
+        print(f'Gate mappings: ')
         for g in gate_ids:
             print(g)
+        print()  
         
-        # for i in graph.inputs:
-        #     print(i)
-        #     # print(type(i[1]))
-        #     # print((i[1].name), i[1].id)
-        # for g in graph.gates:
-        #     print(g)
-        #     # print(type(g[1]))
-        #     # print((g[1].gate_id, g[1].gate_type, g[1].inputs, g[1].output))
-        # for o in graph.outputs:
-        #     print(o)
-        #     # print(type(o[1]))
-        #     # print((o[1].name), o[1].id)
-        # print()
+        print(f'GATE parameters: ')
+        gate_functions = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'models')
+        gate_id_names = [i[1]+'_model' for i in gate_ids]
+        gate_functions = query_helper(gate_functions, 'name', gate_id_names)
+        gate_params = [(gf['name'][:-6], {g['name']: g['value'] for g in gf['parameters']}) for gf in gate_functions]
+        for f in gate_params:
+            print(f)
+            
+        # TEMP
+        print('\nGate Function Mappings: ')
+        gate_function_names = [gf['functions'] for gf in gate_functions]
+        # check that all the gates use the same RESPONSE & INPUT COMPOSITION functions
+        # Here, we can check whether all the gates have the toxicity and cytometry functions
+        for gn in gate_function_names:
+            print(gn)
+        # END TEMP
+        
+        print('\nGate Functions: ')
+        ucfmain_functions = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'functions')
+        hill_response = query_helper(ucfmain_functions, 'name', ['Hill_response'])[0]
+        input_composition = query_helper(ucfmain_functions, 'name', ['linear_input_composition'])[0]
+        
+        x = 1.0
+        K = 1.0 
+        n = 1.0
+        x1 = 10
+        x2 = 1.0
+        hill_response_equation = hill_response['equation'].replace('^', '**') # substitute power operator
+        print(f'Hill_response: {hill_response_equation} = {eval(hill_response_equation)}')
+        linear_input_composition = input_composition['equation']
+        print(f'linear_input_composition: {linear_input_composition}')
+        print()
+        
+        print('OUTPUT parameters: ')
+        output_names = [repr(o) for o in graph.outputs]
+        output_model_names = [o+'_model' for o in output_names]
+        # output_jsons = query_helper(self.ucf.UCFout, 'collection', [output_model_names])
+        output_jsons = query_helper(self.ucf.query_top_level_collection(self.ucf.UCFout, 'models'), 'name', output_model_names)
+        output_params = [(o['name'][:-6], {p['name']: p['value'] for p in o['parameters']}) for o in output_jsons]
+        for op in output_params:
+            print(op)
+        print()
+            
+        c = 100
+        output_function_json = self.ucf.query_top_level_collection(self.ucf.UCFout, 'functions')[0]
+        output_function_str = output_function_json['equation']
+        print(f'Output device response function: \n{output_function_str} = {eval(output_function_str)}\n')
+        
         
         print()
         return 0
@@ -354,10 +390,19 @@ if __name__ == '__main__':
     vname = 'and'
     # vname = 'g92_boolean'
     
-    # ucfname = 'Bth1C1G1T1'
-    ucfname = 'Eco1C1G1T1'
+    # (3in, 1out, 7gategroups)
+    ucfname = 'Bth1C1G1T1'
+    
+    # (4in, 1out, 12gategroups)
+    # ucfname = 'Eco1C1G1T1'
+    
+    # (7in, 1out, 6gategroups)
     # ucfname = 'Eco2C1G3T1'
+    
+    # (7in, 1out, 13gategroups)
     # ucfname = 'Eco2C1G5T1'
+    
+    # (3in, 2out, 9gategroups)
     # ucfname = 'SC1C1G1T1'
     
     # TODO: source UCF files from CELLO-UCF instead

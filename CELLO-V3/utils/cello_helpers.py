@@ -89,6 +89,7 @@ def print_json(chunk):
 def query_helper(dictList, key, vals):
     out = []
     for d in dictList:
-        if d[key] in vals:
-            out.append(d)
+        if key in list(d.keys()):
+            if d[key] in vals:
+                out.append(d)
     return out
