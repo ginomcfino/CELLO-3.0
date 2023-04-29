@@ -21,34 +21,55 @@ class IO:
         return f'{self.name}'
 
 class Input(IO):
-    def __init__(self, name, id, function=None, params=[], outStruc=''):
+    def __init__(self, name, id):
         super().__init__(name, id)
-        # TODO: implementation-in-progress
-        if function is not None:
-            self.function = function
-            self.params = params
-            self.outStruc = outStruc
+        self.function = None
+        self.ymax = None
+        self.ymin = None
+        self.state = []
+        self.out_scores = [0]
+            
+    def add_eval_params(self, function, params):
+        self.function = function
+        self.ymax = params['ymax']
+        self.ymin = params['ymin']
+        rounding = 2 # adjust to make it more or less precise
+        step_size = 10**(-1 * rounding)
+        self.state = [round(self.ymin + i * step_size, rounding) for i in range(int((self.ymax - self.ymin) / step_size) + 1)]
+        self.out_scores = []
+        try:
+            for p in params.keys():
+                locals()[p] = params[p]
+            for s in self.state:
+                STATE = s
+                self.out_scores.append(round(eval(self.function), rounding+1))
+        except Exception as e:
+            debug_print(f'ERROR calculating input score for {str(self)}, with function {self.function}\n{e}')
+        
     
     def __str__(self):
-        return f'{self.name} input {self.id}'
+        if self.function is None:
+            return f'input {self.name} {self.id}'
+        else:
+            return f'input {self.name} {self.id} with ymax:{self.ymax} and ymin:{self.ymin}'
 
 class Output(IO):
     def __str__(self):
-        return f'{self.name} output {self.id}'
+        return f'output {self.name} {self.id}'
     
     
 class Gate:
     # NOTE: used to represent a gate in a netlist
-    def __init__(self, gate_id, gate_type, inputs, output, gates=[]):
+    def __init__(self, gate_id, gate_type, inputs, output):
         self.gate_id = gate_id
         self.gate_type = gate_type
         self.inputs = inputs if type(inputs) == list else list(inputs.values()) # each gate can have up to 2 inputs
         self.output = output if type(output) == int else list(output.values())[0] # each gate can have only 1 output
         self.uid = ','.join(str(i) for i in self.inputs) + '-' + str(self.output)
-        self.gate_ids = gates
+        self.gate_ids = []
     
     def __str__(self):
-        return f'{self.gate_type} gate {self.gate_id} w/ inputs {self.inputs} and output {self.output}'
+        return f'gate {self.gate_type} {self.gate_id} w/ inputs {self.inputs} and output {self.output}'
     
     def __repr__(self):
         return f'{self.gate_id}'

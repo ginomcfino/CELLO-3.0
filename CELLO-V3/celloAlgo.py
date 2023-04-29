@@ -226,17 +226,17 @@ class CELLO3:
         STATE = 1.0
         
         print()
-        input_model_names = [repr(i)+'_model' for i in graph.inputs]
+        input_model_names = [i.name+'_model' for i in graph.inputs]
         input_params = query_helper(self.ucf.query_top_level_collection(self.ucf.UCFin, 'models'), 'name', input_model_names)
-        input_params = [(c['name'][:-6], {p['name']: p['value'] for p in c['parameters']}) for c in input_params]
+        input_params = {c['name'][:-6]: {p['name']: p['value'] for p in c['parameters']} for c in input_params}
         print(f'INPUT paramters:')
         for p in input_params:
-            print(p)
+            print(p, input_params[p])
         print()
         print(f'Input sensor response function: \n{input_function_str} = {eval(input_function_str)}\n')
         # print(f'Parameters in sensor_response function json: \n{input_function_params}\n')
             
-        gate_groups = [(repr(g), g.gate_type) for g in graph.gates]
+        gate_groups = [(g.gate_id, g.gate_type) for g in graph.gates]
         gates = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'gates')
         gate_query = query_helper(gates, 'group', [g[0] for g in gate_groups])
         gate_ids = [(g['group'] ,g['name']) for g in gate_query]
@@ -250,7 +250,7 @@ class CELLO3:
         gate_functions = self.ucf.query_top_level_collection(self.ucf.UCFmain, 'models')
         gate_id_names = [i[1]+'_model' for i in gate_ids]
         gate_functions = query_helper(gate_functions, 'name', gate_id_names)
-        gate_params = [(gf['name'][:-6], {g['name']: g['value'] for g in gf['parameters']}) for gf in gate_functions]
+        gate_params = [{gf['name'][:-6]: {g['name']: g['value'] for g in gf['parameters']}} for gf in gate_functions]
         for f in gate_params:
             print(f)
             
@@ -280,13 +280,13 @@ class CELLO3:
         print()
         
         print('OUTPUT parameters: ')
-        output_names = [repr(o) for o in graph.outputs]
+        output_names = [o.name for o in graph.outputs]
         output_model_names = [o+'_model' for o in output_names]
         # output_jsons = query_helper(self.ucf.UCFout, 'collection', [output_model_names])
         output_jsons = query_helper(self.ucf.query_top_level_collection(self.ucf.UCFout, 'models'), 'name', output_model_names)
-        output_params = [(o['name'][:-6], {p['name']: p['value'] for p in o['parameters']}) for o in output_jsons]
+        output_params = {o['name'][:-6]: {p['name']: p['value'] for p in o['parameters']} for o in output_jsons}
         for op in output_params:
-            print(op)
+            print(op, output_params[op])
         print()
             
         c = 100
@@ -294,9 +294,31 @@ class CELLO3:
         output_function_str = output_function_json['equation']
         print(f'Output device response function: \n{output_function_str} = {eval(output_function_str)}\n')
         
-        
+        # adding parameters to inputs
+        for ginput in graph.inputs:
+            if repr(ginput) in input_params:
+                ginput.add_eval_params(input_function_str, input_params[repr(ginput)])
+                
+        # adding parameters to outputs
+        # for goutput in graph.outputs:
+        #     if repr(goutput) in 
+
+        debug_print('reconstructing netlist: ')
+        graph_inputs_for_printing = list(zip(self.rnl.inputs, graph.inputs))
+        for rnl_in, g_in in graph_inputs_for_printing:
+            print(f'{rnl_in} {str(g_in)} and max composition of {max(g_in.out_scores)}')
+            # print(g_in.out_scores)
+        graph_outputs_for_printing = list(zip(self.rnl.outputs, graph.outputs))
+        for rnl_out, g_out in graph_outputs_for_printing:
+            print(rnl_out, str(g_out))
+        graph_gates_for_printing = list(zip(self.rnl.gates, graph.gates))
+        for rnl_g, g_g in graph_gates_for_printing:
+            print(rnl_g, str(g_g))
         print()
+        
         return 0
+    
+    
     
     def check_conditions(self, verbose=True):
         if verbose: print()
@@ -378,7 +400,8 @@ class CELLO3:
         # NOTE: if max_iterations passes a threshold, switch from exhaustive algorithm to simulative algorithm
         threshold = 1000000
         if max_iterations == None or max_iterations > threshold:
-            max_iterations = None
+            # max_iterations = None 
+            max_iterations = threshold # temporary
 
         return pass_check, max_iterations
     
@@ -386,12 +409,14 @@ if __name__ == '__main__':
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
     
+    # vname = 'xor'
     # vname = 'priorityDetector'
-    vname = 'and'
+    # vname = 'chat_3x2'
+    vname = 'g70_boolean'
     # vname = 'g92_boolean'
     
     # (3in, 1out, 7gategroups)
-    ucfname = 'Bth1C1G1T1'
+    # ucfname = 'Bth1C1G1T1'
     
     # (4in, 1out, 12gategroups)
     # ucfname = 'Eco1C1G1T1'
@@ -403,7 +428,7 @@ if __name__ == '__main__':
     # ucfname = 'Eco2C1G5T1'
     
     # (3in, 2out, 9gategroups)
-    # ucfname = 'SC1C1G1T1'
+    ucfname = 'SC1C1G1T1'
     
     # TODO: source UCF files from CELLO-UCF instead
     inpath = '../../IO/inputs' # (contiains the verilog files, and UCF files)
