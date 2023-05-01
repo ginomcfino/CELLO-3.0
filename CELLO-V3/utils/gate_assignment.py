@@ -30,21 +30,24 @@ class Input(IO):
         self.out_scores = [0]
             
     def add_eval_params(self, function, params):
-        self.function = function
-        self.ymax = params['ymax']
-        self.ymin = params['ymin']
-        rounding = 2 # adjust to make it more or less precise
-        step_size = 10**(-1 * rounding)
-        self.state = [round(self.ymin + i * step_size, rounding) for i in range(int((self.ymax - self.ymin) / step_size) + 1)]
-        self.out_scores = []
         try:
-            for p in params.keys():
-                locals()[p] = params[p]
-            for s in self.state:
-                STATE = s
-                self.out_scores.append(round(eval(self.function), rounding+1))
+            self.function = function
+            self.ymax = params['ymax']
+            self.ymin = params['ymin']
+            rounding = 2 # adjust to make it more or less precise
+            step_size = 10**(-1 * rounding)
+            self.state = [round(self.ymin + i * step_size, rounding) for i in range(int((self.ymax - self.ymin) / step_size) + 1)]
+            self.out_scores = []
+            try:
+                for p in params.keys():
+                    locals()[p] = params[p]
+                for s in self.state:
+                    STATE = s
+                    self.out_scores.append(round(eval(self.function), rounding+1))
+            except Exception as e:
+                debug_print(f'ERROR calculating input score for {str(self)}, with function {self.function}\n{e}')
         except Exception as e:
-            debug_print(f'ERROR calculating input score for {str(self)}, with function {self.function}\n{e}')
+            debug_print(f'Error adding evaluation parameters to {str(self)}\n{function} | {params}')
         
     
     def __str__(self):
@@ -54,8 +57,33 @@ class Input(IO):
             return f'input {self.name} {self.id} with ymax:{self.ymax} and ymin:{self.ymin}'
 
 class Output(IO):
+    def __init__(self, name, id):
+        super().__init__(name, id)
+        self.function = None
+        self.unit_conversion = None
+        self.out_score = None
+        self.params = []
+        
+    def add_eval_params(self, function, params):
+        try:
+            self.function = function
+            self.unit_conversion = params['unit_conversion']
+        except Exception as e:
+            debug_print(f'Error adding evaluation parameters to {str(self)}\n{e}\n{function} | {params}')
+            
+    def eval_output(self, input_score):
+        x = input_score
+        c = self.unit_conversion
+        score = eval(self.function)
+        self.out_score = score
+        return score
+    
+    
     def __str__(self):
-        return f'output {self.name} {self.id}'
+        if self.function is None:
+            return f'output {self.name} {self.id}'
+        else:
+            return f'output {self.name} {self.id} with c:{self.unit_conversion} and outscore={self.out_score}'
     
     
 class Gate:
@@ -66,10 +94,44 @@ class Gate:
         self.inputs = inputs if type(inputs) == list else list(inputs.values()) # each gate can have up to 2 inputs
         self.output = output if type(output) == int else list(output.values())[0] # each gate can have only 1 output
         self.uid = ','.join(str(i) for i in self.inputs) + '-' + str(self.output)
-        self.gate_ids = []
+        self.gate_params = {}
+        self.hill_response = None
+        self.input_composition = None
+        self.gate_in_use = None
+        self.best_score = None
+        
+    def add_eval_params(self, hill_response, input_composition, gname, params):
+        self.hill_response = hill_response
+        self.input_composition = input_composition
+        self.gate_params[gname] = params
+        
+    def eval_gates(self, in_comp):
+        # returns the best gate assignment from gate group
+        if self.hill_response is not None and self.input_composition is not None:
+            # this means that add_eval_params was already called
+            gate_scores = []
+            for gname in self.gate_params.keys():
+                gate_scores.append(self.eval_gate(gname, in_comp))
+            best_score = max(gate_scores)
+            self.gate_in_use = best_score[1]
+            self.best_score = best_score[0]
+            return best_score[0]
+    
+    def eval_gate(self, gate_name, in_comp):
+        eval_params = self.gate_params[gate_name]
+        for k in eval_params.keys():
+            locals()[k] = eval_params[k]
+        x = in_comp # UCF has to use 'x' as input_composition in the gate response_funtion
+        return (eval(self.hill_response), gate_name)
     
     def __str__(self):
-        return f'gate {self.gate_type} {self.gate_id} w/ inputs {self.inputs} and output {self.output}'
+        if self.hill_response is not None:
+            if self.gate_in_use is not None:
+                return f'gate {self.gate_type} {self.gate_id} w/ inputs {self.inputs} and output {self.output}, and individual gates {list(self.gate_params.keys())}, best_gate={self.gate_in_use} with score {self.best_score}'
+            else:
+                return f'gate {self.gate_type} {self.gate_id} w/ inputs {self.inputs} and output {self.output}, and individual gates {list(self.gate_params.keys())}'
+        else:
+            return f'gate {self.gate_type} {self.gate_id} w/ inputs {self.inputs} and output {self.output}'
     
     def __repr__(self):
         return f'{self.gate_id}'
@@ -110,6 +172,77 @@ class AssignGraph:
         
     def remove_output(self, output):
         self.outputs.remove(output)
+        
+    def find_prev(self, node):
+        if type(node) == Output:
+            node_id = node.id
+            # prev node of output has to be a gate
+            for g in self.gates:
+                if g.output == node_id:
+                    return g
+            # if it gets here, then something is not right
+            return ValueError()
+        elif type(node) == Gate:
+            prevs = []
+            for i_no in node.inputs:
+                for g in self.gates:
+                    if g.output == i_no:
+                        prevs.append(g)
+                for o in self.outputs:
+                    if o.id == i_no:
+                        prevs.append(o)
+                for i in self.inputs:
+                    if i.id == i_no:
+                        prevs.append(i)
+            if len(prevs) > 1:
+                return prevs
+            else:
+                return prevs[0]
+        else:
+            # this should not happen also
+            return ValueError()
+        
+    # def __eq__(self, other: object) -> bool:
+    #     if isinstance(other, AssignGraph):
+    #         if other.inputs == self.inputs and other.gates == self.gates and other.outputs == self.outputs:
+    #             return True
+    #         else:
+    #             return False
+    #     return NotImplemented
+        
+    # don't think that this function needs to be used.   
+    # def find_next(self, node):
+    #     if type(node) == Input:
+    #         pass
+    #     elif type(node) == Gate:
+    #         pass
+    #     else:
+    #         return None
+        
+        
+    # NOTE: needs modification
+    def get_score(self, node):
+        if type(node) == Input:
+            return max(node.out_scores)
+        elif type(node) == Output:
+            input_score = self.get_score(self.find_prev(node))
+            return node.eval_output(input_score)
+        elif type(node) == Gate:
+            if node.gate_type == 'NOT':
+                input_score = self.get_score(self.find_prev(node))
+                x = input_score
+            elif node.gate_type == 'NOR':
+                input_scores = [self.get_score(x) for x in self.find_prev(node)]
+                x1 = input_scores[0]
+                x2 = input_scores[1]
+                x = eval(node.input_composition)
+            else:
+                # there shouldn't be gates other than NOR/NOT
+                raise(Exception)
+            # below tries to calculate scores for a gate (the best gate choice in this case)
+            return node.eval_gates(x)
+        else:
+            raise(Exception)
         
     def __repr__(self):
         return f"Inputs: {self.inputs}, Outputs: {self.outputs}, Gates: {self.gates}"
