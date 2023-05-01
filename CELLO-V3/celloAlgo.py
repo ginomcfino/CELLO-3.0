@@ -58,10 +58,14 @@ class CELLO3:
                         for rnl_in, g_in in graph_inputs_for_printing:
                             print(f'{rnl_in} {str(g_in)} and max composition of {max(g_in.out_scores)}')
                             # print(g_in.out_scores)
+                        print(f'input_response = {graph.inputs[0].function}')
                         for rnl_g, g_g in graph_gates_for_printing:
                             print(rnl_g, str(g_g))
+                        print(f'hill_response = {graph.gates[0].hill_response}')
+                        print(f'input_composition = {graph.gates[0].input_composition}')
                         for rnl_out, g_out in graph_outputs_for_printing:
                             print(rnl_out, str(g_out))
+                        print(f'unit_conversion = {graph.outputs[0].function}')
                         print()
                     
         return
@@ -165,7 +169,7 @@ class CELLO3:
                         
                         graph = AssignGraph(newI, newO, newG)
                         circuit_score = self.score_circuit(graph, verbose=False)
-                        print(f'INTERMEDIATE circuit score: {circuit_score}, \niteration #{count}', end='\r')
+                        print(f'iteration {count} : intermediate circuit score = {circuit_score}', end='\r')
                         if circuit_score > bestscore:
                             bestscore = circuit_score
                             bestgraphs = [(circuit_score, graph)]
@@ -345,6 +349,7 @@ class CELLO3:
                 print(rnl_out, str(g_out))
             print()
         
+        # NOTE: this part needs to be modified, to return the lower-scored output
         return max(circuit_scores)[0]
     
     
