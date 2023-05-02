@@ -23,7 +23,7 @@ from gate_assignment import *
 # TODO: fix the UCFs with syntax errors
 class CELLO3:
     def __init__(self, vname, ucfname, inpath, outpath, options=None):
-        self.verbose = True
+        self.verbose = True 
         if options is not None:
             yosys_cmd_choice = options['yosys_choice']
             self.verbose = options['verbose']
@@ -56,13 +56,13 @@ class CELLO3:
                     if self.verbose:
                         print('reconstructing netlist: ')
                         for rnl_in, g_in in graph_inputs_for_printing:
-                            print(f'{rnl_in} {str(g_in)} and max composition of {max(g_in.out_scores)}')
+                            print(f'{rnl_in} {str(g_in)} with max sensor output of {str(g_in.out_scores.items())}')
                             # print(g_in.out_scores)
-                        print(f'input_response = {graph.inputs[0].function}')
+                        print(f'input_response = {graph.inputs[0].function}\n')
                         for rnl_g, g_g in graph_gates_for_printing:
                             print(rnl_g, str(g_g))
                         print(f'hill_response = {graph.gates[0].hill_response}')
-                        print(f'input_composition = {graph.gates[0].input_composition}')
+                        print(f'input_composition = {graph.gates[0].input_composition}\n')
                         for rnl_out, g_out in graph_outputs_for_printing:
                             print(rnl_out, str(g_out))
                         print(f'unit_conversion = {graph.outputs[0].function}')
@@ -176,7 +176,7 @@ class CELLO3:
                         elif circuit_score == bestscore:
                             bestgraphs.append((circuit_score, graph))
                         
-        print(f'\nCOUNTed: {count:,} iterations')
+        print(f'\n\nCOUNTed: {count:,} iterations')
         
         
         # temp
@@ -326,13 +326,23 @@ class CELLO3:
             for ggate in graph.gates:
                 if ggate.gate_id == ggroup:
                     ggate.add_eval_params(hill_response_equation, linear_input_composition, gname, gprams)
-                  
-        circuit_scores = []  
-        for goutput in graph.outputs:
-            # NOTE: add funtion to test whether goutput is intermediate or final
-            output_name = goutput.name
-            output_score = graph.get_score(goutput)
-            circuit_scores.append((output_score, output_name))
+        
+        # NOTE: creating a truth table for each graph assignment
+        num_inputs = len(graph.inputs)
+        num_outputs = len(graph.outputs)
+        truth_table = generate_truth_table(num_inputs, num_outputs)
+        truth_table_labels = [i.name for i in graph.inputs] + [o.name for o in graph.outputs]
+                
+        circuit_scores = []
+        for r in range(len(truth_table)):
+            graph.switch_input_ios(truth_table[r], truth_table_labels)
+            for goutput in graph.outputs:
+                # NOTE: add funtion to test whether goutput is intermediate or final
+                output_name = goutput.name
+                goutput_idx = truth_table_labels.index(output_name)
+                output_score = graph.get_score(goutput)
+                truth_table[r][goutput_idx] = output_score
+                circuit_scores.append((output_score, output_name))
 
 
         graph_inputs_for_printing = list(zip(self.rnl.inputs, graph.inputs))
@@ -348,6 +358,11 @@ class CELLO3:
             for rnl_out, g_out in graph_outputs_for_printing:
                 print(rnl_out, str(g_out))
             print()
+            
+        truth_table_vis = f'\n\n{truth_table_labels}\n'
+        for r in truth_table:
+            truth_table_vis += str(r) + '\n'
+        print(truth_table_vis, end='\r')
         
         # NOTE: this part needs to be modified, to return the lower-scored output
         return max(circuit_scores)[0]
@@ -441,8 +456,8 @@ if __name__ == '__main__':
     # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
     
-    # vname = 'and'
-    vname = 'nand'
+    # vname = 'nand'
+    vname = 'and'
     # vname = 'xor'
     # vname = 'priorityDetector'
     # vname = 'chat_3x2'
@@ -451,10 +466,10 @@ if __name__ == '__main__':
     # vname = 'g92_boolean'
     
     # (3in, 1out, 7gategroups)
-    # ucfname = 'Bth1C1G1T1'
+    ucfname = 'Bth1C1G1T1'
     
     # (4in, 1out, 12gategroups)
-    ucfname = 'Eco1C1G1T1'
+    # ucfname = 'Eco1C1G1T1'
     
     # (7in, 1out, 6gategroups)
     # ucfname = 'Eco2C1G3T1'
@@ -467,9 +482,14 @@ if __name__ == '__main__':
     
     # TODO: source UCF files from CELLO-UCF instead
     inpath = '../../IO/inputs' # (contiains the verilog files, and UCF files)
-    outpath = '../../IO/celloAlgoTest' # (any path to a local folder)
+    outpath = '../../IO/cello_demo' # (any path to a local folder)
     
     Cello3Process = CELLO3(vname, ucfname, inpath, outpath, options={'yosys_choice': 1, 'verbose': True})
+    
+    # print(truth_table_labels)
+    # tb = generate_truth_table(3, 4)
+    # for i in tb:
+    #     print(i)
     
     # it goes: gates -> models -> structures -> functions -> score -> parts
     # but what about circuit_rules, device_rules, and motif_library (which I think are useless)
