@@ -48,24 +48,31 @@ class CELLO3:
             cont = input('Continue to evaluation? y/n ')
             if (cont == 'Y' or cont == 'y') and valid:
                     best_result = self.techmap(iter) # Executing the algorithm if things check out
+                    # print(best_result)
                     graph = best_result[1]
                     graph_inputs_for_printing = list(zip(self.rnl.inputs, graph.inputs))
                     graph_gates_for_printing = list(zip(self.rnl.gates, graph.gates))
                     graph_outputs_for_printing = list(zip(self.rnl.outputs, graph.outputs))
-                    debug_print(f'final result for {self.vrlgname}.v+{self.ucfname}: \n{best_result}')
+                    debug_print(f'final result for {self.vrlgname}.v+{self.ucfname}: {best_result[0]}')
                     if self.verbose:
-                        print('reconstructing netlist: ')
+                        print_centered('reconstructing netlist:')
+                        print()
                         for rnl_in, g_in in graph_inputs_for_printing:
                             print(f'{rnl_in} {str(g_in)} with max sensor output of {str(g_in.out_scores.items())}')
                             # print(g_in.out_scores)
-                        print(f'input_response = {graph.inputs[0].function}\n')
+                        print(f'\nin_eval: input_response = {graph.inputs[0].function}\n')
                         for rnl_g, g_g in graph_gates_for_printing:
                             print(rnl_g, str(g_g))
-                        print(f'hill_response = {graph.gates[0].hill_response}')
-                        print(f'input_composition = {graph.gates[0].input_composition}\n')
+                        print(f'\ngate_eval: hill_response = {graph.gates[0].hill_response}')
+                        print(f'gate_eval: input_composition = {graph.gates[0].input_composition}\n')
                         for rnl_out, g_out in graph_outputs_for_printing:
                             print(rnl_out, str(g_out))
-                        print(f'unit_conversion = {graph.outputs[0].function}')
+                        print(f'\noutput_eval: unit_conversion = {graph.outputs[0].function}')
+                        print()
+                        truth_table = best_result[2]
+                        print(best_result[1])
+                        for r in truth_table:
+                            print(r)
                         print()
                     
         return
@@ -156,6 +163,7 @@ class CELLO3:
                     # Check if inputs, outputs, and gates are unique and the correct number
                     if len(set(I_comb + O_comb + G_comb)) == i+o+g:
                         count += 1
+                        print_centered(f'beginning iteration {count}:')
                         # Output the combination
                         map_helper = lambda l, c: list(map(lambda x, y: (x, y), l, c))
                         newI = map_helper(I_comb, netgraph.inputs)
@@ -168,15 +176,17 @@ class CELLO3:
                         newG = [Gate(g[0], g[1].gate_type, g[1].inputs, g[1].output) for g in newG]
                         
                         graph = AssignGraph(newI, newO, newG)
-                        circuit_score = self.score_circuit(graph, verbose=False)
-                        print(f'iteration {count} : intermediate circuit score = {circuit_score}', end='\r')
+                        (circuit_score, tb) = self.score_circuit(graph, verbose=False)
+                        # print(f'iteration {count} : intermediate circuit score = {circuit_score}', end='\r')
+                        print_centered(f'iteration {count} : intermediate circuit score = {circuit_score}')
+                        print()
                         if circuit_score > bestscore:
                             bestscore = circuit_score
-                            bestgraphs = [(circuit_score, graph)]
+                            bestgraphs = [(circuit_score, graph, tb)]
                         elif circuit_score == bestscore:
-                            bestgraphs.append((circuit_score, graph))
+                            bestgraphs.append((circuit_score, graph, tb))
                         
-        print(f'\n\nCOUNTed: {count:,} iterations')
+        print(f'\nCOUNTed: {count:,} iterations')
         
         
         # temp
@@ -330,12 +340,17 @@ class CELLO3:
         # NOTE: creating a truth table for each graph assignment
         num_inputs = len(graph.inputs)
         num_outputs = len(graph.outputs)
-        truth_table = generate_truth_table(num_inputs, num_outputs)
-        truth_table_labels = [i.name for i in graph.inputs] + [o.name for o in graph.outputs]
+        num_gates = len(graph.gates)
+        truth_table = generate_truth_table(num_inputs, num_gates, num_outputs)
+        truth_table_labels = [i.name for i in graph.inputs] + [g.gate_in_use for g in graph.gates] + [o.name for o in graph.outputs]
                 
         circuit_scores = []
         for r in range(len(truth_table)):
-            graph.switch_input_ios(truth_table[r], truth_table_labels)
+            print(f'row{r} {truth_table[r]}')
+            for (input_name, input_onoff) in dict(zip(truth_table_labels[:num_inputs], truth_table[r][:num_inputs])).items():
+                for grinput in graph.inputs:
+                    if repr(grinput) == input_name:
+                        grinput.switch_onoff(input_onoff)
             for goutput in graph.outputs:
                 # NOTE: add funtion to test whether goutput is intermediate or final
                 output_name = goutput.name
@@ -343,7 +358,22 @@ class CELLO3:
                 output_score = graph.get_score(goutput)
                 truth_table[r][goutput_idx] = output_score
                 circuit_scores.append((output_score, output_name))
-
+                print(circuit_scores)
+            truth_table_labels = [i.name for i in graph.inputs] + [g.gate_in_use for g in graph.gates] + [o.name for o in graph.outputs]
+            for grgate in graph.gates:
+                grgate_idx = truth_table_labels.index(grgate.gate_in_use)
+                truth_table[r][grgate_idx] = grgate.best_score
+        
+        # this part does this: (all_inputs_on==max) – min(partial/all_inputs_off)
+        truth_tested_output_values = {}
+        output_idx_start = num_inputs + num_gates
+        for i in range(output_idx_start, len(truth_table_labels)):
+            output_scores = []
+            for r in range(len(truth_table)):
+                output_scores.append(truth_table[r][i])
+            max_output_score = max(output_scores)
+            min_output_score = min(output_scores)
+            truth_tested_output_values[truth_table_labels[i]] = max_output_score - min_output_score
 
         graph_inputs_for_printing = list(zip(self.rnl.inputs, graph.inputs))
         graph_gates_for_printing = list(zip(self.rnl.gates, graph.gates))
@@ -358,14 +388,18 @@ class CELLO3:
             for rnl_out, g_out in graph_outputs_for_printing:
                 print(rnl_out, str(g_out))
             print()
-            
+        
+        truth_table_labels = [i.name for i in graph.inputs] + [g.gate_in_use for g in graph.gates] + [o.name for o in graph.outputs]
         truth_table_vis = f'\n\n{truth_table_labels}\n'
         for r in truth_table:
             truth_table_vis += str(r) + '\n'
-        print(truth_table_vis, end='\r')
+        # print(truth_table_vis, end='\r')
+        print(truth_table_vis)
+        print(truth_tested_output_values)
+        # take the output colums of the truth table, and calculate the outputs
         
-        # NOTE: this part needs to be modified, to return the lower-scored output
-        return max(circuit_scores)[0]
+        # NOTE: return the lower-scored output
+        return (min(truth_tested_output_values.values()), truth_table)
     
     
     def check_conditions(self, verbose=True):
@@ -453,11 +487,12 @@ class CELLO3:
         return pass_check, max_iterations
     
 if __name__ == '__main__':
-    # ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
+    ucflist = ['Bth1C1G1T1', 'Eco1C1G1T1', 'Eco1C2G2T2', 'Eco2C1G3T1', 'Eco2C1G5T1', 'Eco2C1G6T1', 'SC1C1G1T1']
     # problem_ucfs = ['Eco1C2G2T2', 'Eco2C1G6T1']
     
+    
     # vname = 'nand'
-    vname = 'and'
+    # vname = 'and'
     # vname = 'xor'
     # vname = 'priorityDetector'
     # vname = 'chat_3x2'
@@ -465,8 +500,16 @@ if __name__ == '__main__':
     # vname = 'g77_boolean'
     # vname = 'g92_boolean'
     
+    vname = input('which verilog to test? name=')
+    ucfname = input(f'which ucf to use? \n{ucflist} choice=index=')
+    try:
+        ucfname = ucflist[int(ucfname)]
+    except Exception as e:
+        ucfname = 'Eco1C1G1T1'
+        
+    
     # (3in, 1out, 7gategroups)
-    ucfname = 'Bth1C1G1T1'
+    # ucfname = 'Bth1C1G1T1'
     
     # (4in, 1out, 12gategroups)
     # ucfname = 'Eco1C1G1T1'

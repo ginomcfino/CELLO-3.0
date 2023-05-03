@@ -29,15 +29,13 @@ class Input(IO):
         self.ymin = None
         self.states = {'high': 1, 'low': 0}
         self.out_scores = {'high': -1, 'low': -1}
-        # first test STATE = 0/1
-        # next, text STATE = ymin/ymax
         self.score_in_use = None
         
-    def switch_onoff(self, bit):
-        if bit == 0:
+    def switch_onoff(self, state):
+        if state == 0:
             self.score_in_use = 'low'
         else:
-            self.score_in_use == 'high'
+            self.score_in_use = 'high'
             
     def add_eval_params(self, function, params):
         try:
@@ -45,6 +43,9 @@ class Input(IO):
             self.params = params
             self.ymax = params['ymax']
             self.ymin = params['ymin']
+            # comment out below two lines to make STATE 0/1
+            # self.states['high'] = self.ymax
+            # self.states['low'] = self.ymin
             try: 
                 for p in params.keys():
                     locals()[p] = params[p]
@@ -162,6 +163,7 @@ class AssignGraph:
         self.inputs = inputs
         self.outputs = outputs
         self.gates = gates
+        self.in_binary = {}
         
     def add_input(self, input):
         self.inputs.append(input)
@@ -183,12 +185,7 @@ class AssignGraph:
         
     def switch_input_ios(self, truth_row, indexes):
         # NOTE: this is where the inputs get 
-        for i in range(len(self.inputs)):
-            input_name = indexes[i]
-            for i_node in self.inputs:
-                if repr(i_node) == input_name:
-                    onoff = truth_row[i]
-                    i_node.switch_onoff(onoff)
+        self.in_binary = dict(zip(indexes, truth_row))
         
     def find_prev(self, node):
         if type(node) == Output:
@@ -241,12 +238,16 @@ class AssignGraph:
     def get_score(self, node):
         if type(node) == Input:
             if node.score_in_use is not None:
+                debug_print(f'{node.name} {node.out_scores[node.score_in_use]}', padding=False)
                 return node.out_scores[node.score_in_use]
             else:
+                print('this should not happen')
                 return max(node.out_scores.values())
         elif type(node) == Output:
             input_score = self.get_score(self.find_prev(node))
-            return node.eval_output(input_score)
+            output_score = node.eval_output(input_score=input_score)
+            debug_print(f'{node.name} {output_score}', padding=False)
+            return output_score
         elif type(node) == Gate:
             if node.gate_type == 'NOT':
                 input_score = self.get_score(self.find_prev(node))
@@ -260,7 +261,9 @@ class AssignGraph:
                 # there shouldn't be gates other than NOR/NOT
                 raise(Exception)
             # below tries to calculate scores for a gate (the best gate choice in this case)
-            return node.eval_gates(x)
+            gate_score = node.eval_gates(x)
+            debug_print(f'{node.gate_in_use} {gate_score}', padding=False)
+            return gate_score
         else:
             raise(Exception)
         

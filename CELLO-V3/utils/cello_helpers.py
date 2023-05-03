@@ -52,10 +52,10 @@ advantage: less resource-intensive than genetic simulation algorithm
 disadvantage: not guaranteed to reach global optima
 '''
 
-def generate_truth_table(bits, out_placehodler):
+def generate_truth_table(num_in, num_gates, num_out):
     table = []
-    for i in range(2**bits):
-        row = [(i >> j) & 1 for j in range(bits-1, -1, -1)] + ([0] * out_placehodler)
+    for i in range(2**num_in):
+        row = [(i >> j) & 1 for j in range(num_in-1, -1, -1)] + ([0] * num_gates) + ([0] * num_out)
         table.append(row)
     return table
 
