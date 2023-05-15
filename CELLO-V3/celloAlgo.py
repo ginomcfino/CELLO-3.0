@@ -4,6 +4,7 @@ from netlist_class import Netlist
 from ucf_class import UCF
 import sys
 import itertools
+import math
 sys.path.insert(0, 'utils/')  # links the utils folder to the search path
 from cello_helpers import *
 from gate_assignment import *
@@ -373,7 +374,8 @@ class CELLO3:
                 output_scores.append(truth_table[r][i])
             max_output_score = max(output_scores)
             min_output_score = min(output_scores)
-            truth_tested_output_values[truth_table_labels[i]] = max_output_score - min_output_score
+            # truth_tested_output_values[truth_table_labels[i]] = max_output_score - min_output_score
+            truth_tested_output_values[truth_table_labels[i]] = math.log((max_output_score / min_output_score))
 
         graph_inputs_for_printing = list(zip(self.rnl.inputs, graph.inputs))
         graph_gates_for_printing = list(zip(self.rnl.gates, graph.gates))

@@ -268,7 +268,7 @@ class AssignGraph:
             raise(Exception)
         
     def __repr__(self):
-        return f"Inputs: {self.inputs}, Outputs: {self.outputs}, Gates: {self.gates}"
+        return f"Inputs: {self.inputs}, Gates: {self.gates}, Outputs: {self.outputs}"
 
 # NOTE: used to initialize all permuations of gate assignments from UCF to netlist
 class GraphParser:
