@@ -235,10 +235,10 @@ class AssignGraph:
         
         
     # NOTE: needs modification
-    def get_score(self, node):
+    def get_score(self, node, verbose=False):
         if type(node) == Input:
             if node.score_in_use is not None:
-                debug_print(f'{node.name} {node.out_scores[node.score_in_use]}', padding=False)
+                if verbose: debug_print(f'{node.name} {node.out_scores[node.score_in_use]}', padding=False)
                 return node.out_scores[node.score_in_use]
             else:
                 print('this should not happen')
@@ -246,7 +246,7 @@ class AssignGraph:
         elif type(node) == Output:
             input_score = self.get_score(self.find_prev(node))
             output_score = node.eval_output(input_score=input_score)
-            debug_print(f'{node.name} {output_score}', padding=False)
+            if verbose: debug_print(f'{node.name} {output_score}', padding=False)
             return output_score
         elif type(node) == Gate:
             if node.gate_type == 'NOT':
@@ -262,7 +262,7 @@ class AssignGraph:
                 raise(Exception)
             # below tries to calculate scores for a gate (the best gate choice in this case)
             gate_score = node.eval_gates(x)
-            debug_print(f'{node.gate_in_use} {gate_score}', padding=False)
+            if verbose: debug_print(f'{node.gate_in_use} {gate_score}', padding=False)
             return gate_score
         else:
             raise(Exception)
