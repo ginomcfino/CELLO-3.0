@@ -1,6 +1,15 @@
 # import networkx as nx
 # import matplotlib.pyplot as plt
 from ucf_class import *
+
+def generate_truth_table(num_in, num_gates, num_out, in_list, gate_list, out_list):
+    table = []
+    for i in range(2**num_in):
+        row = [(i >> j) & 1 for j in range(num_in-1, -1, -1)] + ([None] * num_in) + ([None] * num_gates) * 2 + ([None] * num_out) * 2
+        table.append(row)
+    # labels = [i.name for i in in_list] + [g.gate_id for g in gate_list] + [o.name for o in out_list] 
+    labels = [f'{i.name}_I/O' for i in in_list] + [i.name for i in in_list] + [f'{g.gate_id}_I/O' for g in gate_list] + [g.gate_id for g in gate_list] + [f'{o.name}_I/O' for o in out_list] + [o.name for o in out_list] 
+    return (table, labels)
     
 class IO:
     def __init__(self, name, id):
@@ -32,7 +41,7 @@ class Input(IO):
         self.score_in_use = None
         
     def switch_onoff(self, state):
-        if state == 0:
+        if int(state) == 0:
             self.score_in_use = 'low'
         else:
             self.score_in_use = 'high'

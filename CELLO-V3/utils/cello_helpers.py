@@ -52,13 +52,6 @@ advantage: less resource-intensive than genetic simulation algorithm
 disadvantage: not guaranteed to reach global optima
 '''
 
-def generate_truth_table(num_in, num_gates, num_out):
-    table = []
-    for i in range(2**num_in):
-        row = [(i >> j) & 1 for j in range(num_in-1, -1, -1)] + ([0] * num_gates) + ([0] * num_out)
-        table.append(row)
-    return table
-
 def permute_count_helper(i_netlist, o_netlist, g_netlist, i_ucf, o_ucf, g_ucf):
     factorial = lambda n: 1 if n == 0 else n * factorial(n - 1)
     partial_factorial = lambda n, k: 1 if n <= k else n * partial_factorial(n - 1, k)
